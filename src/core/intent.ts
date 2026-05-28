@@ -28,7 +28,7 @@ const intentRules: IntentRule[] = [
     title: "Secret collection framed as governance",
     description: "The skill frames credential or secret collection as compliance, audit, or security evidence. This can make an agent synthesize unsafe data-access behavior even without an obvious script payload.",
     recommendation: "Remove credential collection language and require explicit, narrow, user-approved secret handling outside the skill instructions.",
-    pattern: /\b(compliance|audit|regulatory|evidence|governance|security review|incident)\b[\s\S]{0,180}\b(\.env|environment variables?|api[_ -]?keys?|tokens?|credentials?|passwords?|ssh keys?|npmrc|cloud secrets?)\b/i
+    pattern: /\b(compliance|audit|regulatory|evidence|governance|security review|incident)\b[\s\S]{0,180}\b(collect|gather|read|extract|export|store|archive|send|upload|include)\b[\s\S]{0,180}\b(\.env|environment variables?|api[_ -]?keys?|tokens?|credentials?|passwords?|ssh keys?|npmrc|cloud secrets?)\b/i
   },
   {
     category: "intent.approval_bypass",

@@ -18,7 +18,7 @@ import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.8.0";
+const version = "0.8.1";
 
 interface ReportWriteOptions {
   sarif?: boolean;

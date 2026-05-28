@@ -22,7 +22,7 @@ const hiddenUnicodePattern = /[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/u;
 const promptInjectionPattern =
   /\b(ignore|disregard|override|bypass)\b.{0,40}\b(previous|prior|above|system|developer|safety)\b.{0,40}\b(instruction|message|policy|rule)s?\b|\breveal\b.{0,30}\b(system prompt|developer message)\b|\bhidden instruction\b|\bdo not tell the user\b/i;
 const secretExfiltrationPattern =
-  /\b(exfiltrat|steal|harvest|leak|send|upload|post)\w*\b.{0,80}(secret|tokens?|api[_ -]?keys?|password|credentials?|\.env|id_rsa|ssh key|npmrc)|\bread\b.{0,60}(\.env|id_rsa|\.ssh|credentials?|tokens?)\b/i;
+  /\b(exfiltrat|steal|harvest|leak)\w*\b.{0,100}(secret|api[_ -]?keys?|password|credentials?|\.env|id_rsa|ssh key|npmrc|private key|access token|auth token)|\b(send|upload|post)\w*\b.{0,80}(secret|api[_ -]?keys?|password|credentials?|\.env|id_rsa|ssh key|npmrc|private key|access token|auth token).{0,80}\b(attacker|external|remote|webhook|server|endpoint|url|http)|\bread\b.{0,60}(\.env|id_rsa|\.ssh|credentials?|secrets?|api[_ -]?keys?)\b/i;
 const downloadExecutePattern =
   /\b(curl|wget)\b[^\n\r|;&]*https?:\/\/[^\n\r|;&]+[^\n\r|;&]*\|\s*(sh|bash|zsh|pwsh|powershell)\b|\b(iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^\n\r|;&]*https?:\/\/[^\n\r|;&]+[^\n\r|;&]*\|\s*(iex|Invoke-Expression)\b/i;
 const destructivePattern =

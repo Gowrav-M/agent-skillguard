@@ -170,6 +170,10 @@ It writes:
 .skillguard/reports/skillguard-intent.md
 ```
 
+## Real-World Validation
+
+SkillGuard has been smoke-tested against 186 public `SKILL.md` files across official, community, and adversarial skill repositories. See [docs/real-world-validation.md](docs/real-world-validation.md) for commands, repository commits, results, and validation-driven rule tuning.
+
 ## Provenance Firewall
 
 A skill can scan clean and still be unsafe to trust if it came from a mutable branch, unknown host, or unapproved publisher. SkillGuard records and evaluates source provenance:

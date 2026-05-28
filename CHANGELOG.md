@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.1
+
+- Added real-world validation notes for 186 public `SKILL.md` files across official, community, and adversarial skill repositories.
+- Tightened secret-exfiltration and compliance-secret intent rules after validation exposed noisy matches in API reference text.
+
 ## 0.8.0
 
 - Added Semantic Intent Firewall with `intent`.

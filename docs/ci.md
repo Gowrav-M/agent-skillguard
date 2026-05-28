@@ -37,6 +37,14 @@ For vendored skills, require immutable source metadata:
     --publisher org
 ```
 
+## Capability Contract Gate
+
+Block skills that use power they did not declare:
+
+```yaml
+- run: npx agent-skillguard contract ./skills
+```
+
 For early rollout, use `agent-skillguard admit ./skills --sarif` without `--require-lock`. Once the team has approved skill locks, enable `--require-lock` so unreviewed skill drift fails pull requests.
 
 ## Update Review

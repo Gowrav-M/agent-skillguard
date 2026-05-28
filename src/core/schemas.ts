@@ -51,6 +51,7 @@ export const skillBomEntrySchema = z.object({
   manifest: skillManifestSchema,
   files: z.array(skillFileSchema),
   scripts: z.array(skillScriptSchema),
+  observedCapabilities: z.array(capabilitySchema).default([]),
   capabilities: z.array(capabilitySchema)
 });
 
@@ -156,6 +157,27 @@ export const skillTrustDecisionSchema = z.object({
   reasons: z.array(admissionReasonSchema)
 });
 
+export const skillCapabilityContractSchema = z.object({
+  skillName: z.string().min(1),
+  declaredCapabilities: z.array(capabilitySchema),
+  observedCapabilities: z.array(capabilitySchema),
+  undeclaredCapabilities: z.array(capabilitySchema),
+  unusedDeclarations: z.array(capabilitySchema)
+});
+
+export const skillContractDecisionSchema = z.object({
+  generatedAt: z.string().datetime(),
+  decision: z.enum(["allow", "review", "block"]),
+  summary: z.object({
+    skills: z.number().int().nonnegative(),
+    violations: z.number().int().nonnegative(),
+    undeclaredCapabilities: z.number().int().nonnegative()
+  }),
+  contracts: z.array(skillCapabilityContractSchema),
+  reasons: z.array(admissionReasonSchema),
+  report: skillGuardReportSchema
+});
+
 export type Severity = z.infer<typeof severitySchema>;
 export type SkillCapability = z.infer<typeof capabilitySchema>;
 export type SkillManifest = z.infer<typeof skillManifestSchema>;
@@ -173,3 +195,5 @@ export type SkillUpdateReview = z.infer<typeof skillUpdateReviewSchema>;
 export type SkillProvenance = z.infer<typeof skillProvenanceSchema>;
 export type SkillTrustPolicy = z.infer<typeof skillTrustPolicySchema>;
 export type SkillTrustDecision = z.infer<typeof skillTrustDecisionSchema>;
+export type SkillCapabilityContract = z.infer<typeof skillCapabilityContractSchema>;
+export type SkillContractDecision = z.infer<typeof skillContractDecisionSchema>;

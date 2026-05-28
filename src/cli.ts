@@ -4,6 +4,7 @@ import { constants } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
+import { evaluateCapabilityContracts, writeContractArtifacts } from "./core/contract.js";
 import { ensureDir, readJsonFile, writeJsonFile } from "./core/files.js";
 import { createSkillLock, defaultLockPathForSkill, readSkillLock, verifySkillLock, writeSkillLock } from "./core/lockfile.js";
 import { packSkillBundle, verifySkillBundle } from "./core/pack.js";
@@ -15,7 +16,7 @@ import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.4.0";
+const version = "0.5.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -192,6 +193,33 @@ program
 
     if (decision.decision === "block") {
       console.error("Trust blocked");
+      for (const reason of decision.reasons) {
+        console.error(`- [${reason.severity}] ${reason.code}: ${reason.target}`);
+      }
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command("contract")
+  .argument("<path>", "Skill directory or directory containing multiple SKILL.md files.")
+  .description("Enforce least-privilege capability contracts from SKILL.md declarations.")
+  .action(async (path: string) => {
+    const paths = localPaths(process.cwd());
+    const report = await scanSkillPath(resolve(process.cwd(), path));
+    const decision = evaluateCapabilityContracts(report);
+    await ensureDir(paths.reportsDir);
+    const artifacts = await writeContractArtifacts(decision, paths.reportsDir);
+
+    console.log(`Contract decision: ${decision.decision.toUpperCase()}`);
+    console.log(`Violations: ${decision.summary.violations}`);
+    console.log(`Undeclared capabilities: ${decision.summary.undeclaredCapabilities}`);
+    for (const artifact of artifacts) {
+      console.log(`Wrote ${artifact}`);
+    }
+
+    if (decision.decision === "block") {
+      console.error("Contract blocked");
       for (const reason of decision.reasons) {
         console.error(`- [${reason.severity}] ${reason.code}: ${reason.target}`);
       }

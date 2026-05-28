@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- Added least-privilege Capability Contracts with `contract`.
+- SkillBOM now separates observed capabilities from declared capabilities.
+- Blocks undeclared high-risk behavior such as secret access, shell execution, network access, filesystem writes, package installs, git writes, and MCP mutation.
+- Improved secret-exfiltration detection for `.env` and plural API-key wording.
+
 ## 0.4.0
 
 - Added the Skill Provenance Firewall with `trust`.

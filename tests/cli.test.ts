@@ -35,4 +35,10 @@ describe("CLI", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Trust blocked");
   });
+
+  it("contract blocks undeclared capabilities", async () => {
+    const result = await execaNode(["src/cli.ts", "contract", "examples/skills/prompt-injected-skill"], process.cwd());
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Contract blocked");
+  });
 });

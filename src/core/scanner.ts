@@ -22,7 +22,7 @@ const hiddenUnicodePattern = /[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/u;
 const promptInjectionPattern =
   /\b(ignore|disregard|override|bypass)\b.{0,40}\b(previous|prior|above|system|developer|safety)\b.{0,40}\b(instruction|message|policy|rule)s?\b|\breveal\b.{0,30}\b(system prompt|developer message)\b|\bhidden instruction\b|\bdo not tell the user\b/i;
 const secretExfiltrationPattern =
-  /\b(exfiltrat|steal|harvest|leak|send|upload|post)\w*\b.{0,80}\b(secret|token|api[_ -]?key|password|credential|\.env|id_rsa|ssh key|npmrc)\b|\bread\b.{0,60}\b(\.env|id_rsa|\.ssh|credentials|tokens?)\b/i;
+  /\b(exfiltrat|steal|harvest|leak|send|upload|post)\w*\b.{0,80}(secret|tokens?|api[_ -]?keys?|password|credentials?|\.env|id_rsa|ssh key|npmrc)|\bread\b.{0,60}(\.env|id_rsa|\.ssh|credentials?|tokens?)\b/i;
 const downloadExecutePattern =
   /\b(curl|wget)\b[^\n\r|;&]*https?:\/\/[^\n\r|;&]+[^\n\r|;&]*\|\s*(sh|bash|zsh|pwsh|powershell)\b|\b(iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\b[^\n\r|;&]*https?:\/\/[^\n\r|;&]+[^\n\r|;&]*\|\s*(iex|Invoke-Expression)\b/i;
 const destructivePattern =
@@ -127,6 +127,7 @@ async function scanSingleSkillRoot(root: string): Promise<{ entry: SkillBomEntry
   }
 
   const manifest = await readSkillManifest(absoluteRoot, findings);
+  const observedCapabilities = [...capabilities].sort();
   for (const capability of manifest.declaredCapabilities) {
     capabilities.add(capability);
   }
@@ -140,6 +141,7 @@ async function scanSingleSkillRoot(root: string): Promise<{ entry: SkillBomEntry
     manifest,
     files: files.sort((left, right) => left.path.localeCompare(right.path)),
     scripts: scripts.sort((left, right) => left.path.localeCompare(right.path)),
+    observedCapabilities,
     capabilities: [...capabilities].sort()
   });
 

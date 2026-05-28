@@ -1,10 +1,11 @@
 # Agent SkillGuard
 
-Agent skills are executable supply chain. `agent-skillguard` checks provenance, admits, reviews updates, scans, locks, packages, and verifies AI agent skills before developers install or run them.
+Agent skills are executable supply chain. `agent-skillguard` checks provenance, enforces capability contracts, admits, reviews updates, scans, locks, packages, and verifies AI agent skills before developers install or run them.
 
 ```bash
 npx agent-skillguard demo
 npx agent-skillguard trust ./skills/code-reviewer --source https://github.com/org/repo/tree/main/skills/code-reviewer --commit <sha>
+npx agent-skillguard contract ./skills
 npx agent-skillguard admit ./skills
 npx agent-skillguard review-update ./approved/skill ./candidate/skill
 npx agent-skillguard scan ./skills
@@ -21,6 +22,7 @@ Skills for Codex, Claude Code, Cursor, OpenCode, MCP workflows, and internal age
 `agent-skillguard` is not another skill list and not another agent framework. It is a local-first admission controller for agent skills:
 
 - Blocks unpinned, mutable, or unapproved skill sources with a provenance firewall.
+- Enforces least-privilege capability contracts from `SKILL.md` declarations.
 - Finds hidden prompt injection and policy override text in Markdown, YAML, HTML comments, and code blocks.
 - Flags secret exfiltration, credential harvesting, persistence, broad deletes, and download-execute installer chains.
 - Detects risky bundle structure such as symlinks, hidden files, binaries, oversized payloads, and path traversal.
@@ -71,6 +73,7 @@ agent-skillguard init
 agent-skillguard demo
 agent-skillguard policy
 agent-skillguard trust <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--write]
+agent-skillguard contract <path>
 agent-skillguard admit <path> [--require-lock] [--sarif]
 agent-skillguard review-update <approved-skill> <candidate-skill>
 agent-skillguard scan <path> [--sarif] [--fail-on critical]
@@ -111,6 +114,23 @@ Trust review writes:
 ```
 
 With `--write`, it also records `skillguard.provenance.json` beside the skill. This gives teams an audit record of what source, publisher, commit, and skill digest were approved.
+
+## Capability Contracts
+
+Skills should declare their power before they run. SkillGuard compares declared capabilities in `SKILL.md` against observed behavior:
+
+```bash
+agent-skillguard contract ./skills
+```
+
+It blocks undeclared high-risk behavior such as shell execution, network access, filesystem writes, package installs, secret access, git writes, and MCP tool mutation.
+
+Contract review writes:
+
+```text
+.skillguard/reports/skillguard-contract.json
+.skillguard/reports/skillguard-contract.md
+```
 
 ## Admission Control
 
@@ -165,6 +185,7 @@ Update review writes:
 | MCP scanners | Inspect MCP tool descriptors | Scans skills, scripts, manifests, bundles, locks, and SARIF |
 | OpenSSF Scorecard | Scores open-source project security posture | Skill-specific admission decisions and SkillBOMs |
 | SLSA/provenance tools | Prove build artifact origin | Skill-specific source provenance, digest, and trust policy |
+| Permission manifests | Describe expected permissions | Compares declared permissions to inferred skill behavior |
 | Watchtower | Runtime AgentOps and MCP attack-path analysis | SkillGuard handles pre-install and pre-publish skill safety |
 
 ## CI Gate

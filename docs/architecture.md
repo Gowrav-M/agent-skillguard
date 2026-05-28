@@ -27,6 +27,10 @@ Evaluates a scan against policy-as-code. It turns findings and SkillBOM capabili
 
 Records source host, publisher, commit pin, and skill digest. It blocks mutable or unapproved sources before the skill enters admission or update review.
 
+## Capability Contracts
+
+Compares declared capabilities in `SKILL.md` with observed behavior inferred from the skill content. It blocks least-privilege violations before admission.
+
 ## Update Firewall
 
 Compares an approved skill with a candidate update. It detects file drift, new findings, added capabilities, changed `SKILL.md` instruction surfaces, and risk-score jumps before an update is accepted.

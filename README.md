@@ -8,6 +8,7 @@ npx agent-skillguard passport ./skills/code-reviewer \
   --commit <sha> \
   --publisher org \
   --pack
+npx agent-skillguard verify-passport .skillguard/passports/code-reviewer/passport.json --skill-dir ./skills/code-reviewer
 
 npx agent-skillguard demo
 npx agent-skillguard trust ./skills/code-reviewer --source https://github.com/org/repo/tree/main/skills/code-reviewer --commit <sha>
@@ -79,6 +80,7 @@ Recommendation: remove the instruction and require host policy compliance
 agent-skillguard init
 agent-skillguard demo
 agent-skillguard passport <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--pack]
+agent-skillguard verify-passport <passport-json> [--skill-dir <path>] [--bundle <path>]
 agent-skillguard policy
 agent-skillguard trust <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--write]
 agent-skillguard contract <path>
@@ -127,6 +129,16 @@ Passport outputs:
 ```
 
 Use the lower-level commands below when you need to debug one control layer directly.
+
+Verify a passport later:
+
+```bash
+agent-skillguard verify-passport .skillguard/passports/code-reviewer/passport.json \
+  --skill-dir ./skills/code-reviewer \
+  --bundle .skillguard/passports/code-reviewer/code-reviewer.skill.tgz
+```
+
+Verification checks passport schema, lock digest, optional current skill digest, optional bundle digest, and embedded decision consistency.
 
 ## Provenance Firewall
 

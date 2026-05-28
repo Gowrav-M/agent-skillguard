@@ -73,4 +73,33 @@ describe("CLI", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Passport blocked");
   });
+
+  it("verify-passport validates a generated passport", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "skillguard-verify-passport-"));
+    const passport = await execaNode([
+      "src/cli.ts",
+      "passport",
+      join(process.cwd(), "examples/skills/safe-code-reviewer"),
+      "--source",
+      "https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/safe-code-reviewer",
+      "--commit",
+      "0123456789abcdef0123456789abcdef01234567",
+      "--publisher",
+      "Gowrav-M",
+      "--pack"
+    ], cwd);
+    expect(passport.exitCode).toBe(0);
+
+    const verify = await execaNode([
+      "src/cli.ts",
+      "verify-passport",
+      join(cwd, ".skillguard/passports/safe-code-reviewer/passport.json"),
+      "--skill-dir",
+      join(process.cwd(), "examples/skills/safe-code-reviewer"),
+      "--bundle",
+      join(cwd, ".skillguard/passports/safe-code-reviewer/safe-code-reviewer.skill.tgz")
+    ], cwd);
+    expect(verify.exitCode).toBe(0);
+    expect(verify.stdout).toContain("Passport verification passed");
+  });
 });

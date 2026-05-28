@@ -207,6 +207,21 @@ export const skillPassportSchema = z.object({
   })
 });
 
+export const skillPassportVerificationSchema = z.object({
+  generatedAt: z.string().datetime(),
+  valid: z.boolean(),
+  passportDecision: z.enum(["allow", "review", "block"]),
+  checked: z.object({
+    schema: z.boolean(),
+    lockDigest: z.boolean(),
+    skillDigest: z.boolean().optional(),
+    bundleDigest: z.boolean().optional(),
+    decisionConsistency: z.boolean()
+  }),
+  reasons: z.array(admissionReasonSchema),
+  passport: skillPassportSchema
+});
+
 export type Severity = z.infer<typeof severitySchema>;
 export type SkillCapability = z.infer<typeof capabilitySchema>;
 export type SkillManifest = z.infer<typeof skillManifestSchema>;
@@ -227,3 +242,4 @@ export type SkillTrustDecision = z.infer<typeof skillTrustDecisionSchema>;
 export type SkillCapabilityContract = z.infer<typeof skillCapabilityContractSchema>;
 export type SkillContractDecision = z.infer<typeof skillContractDecisionSchema>;
 export type SkillPassport = z.infer<typeof skillPassportSchema>;
+export type SkillPassportVerification = z.infer<typeof skillPassportVerificationSchema>;

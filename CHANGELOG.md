@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+- Added Skill Passport verification with `verify-passport`.
+- Verifies passport schema, lock digest, optional current skill digest, optional bundle digest, and embedded decision consistency.
+- Emits `passport-verification.json` and `passport-verification.md`.
+
 ## 0.6.0
 
 - Added Skill Passport with `passport`.

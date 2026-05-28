@@ -1,8 +1,8 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { createSkillPassport, renderPassportHtml, renderPassportMarkdown, writePassportArtifacts } from "../src/core/passport.js";
+import { createSkillPassport, renderPassportHtml, renderPassportMarkdown, verifySkillPassport, writePassportArtifacts } from "../src/core/passport.js";
 import { skillPassportSchema } from "../src/core/schemas.js";
 
 const source = "https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/safe-code-reviewer";
@@ -65,5 +65,45 @@ describe("skill passport", () => {
     expect(artifacts.some((artifact) => artifact.endsWith("passport.html"))).toBe(true);
     expect(artifacts.some((artifact) => artifact.endsWith(".skill.tgz"))).toBe(true);
     await expect(readFile(join(temp, "passport.json"), "utf8")).resolves.toContain("safe-code-reviewer");
+  });
+
+  it("verifies a passport against the current skill and bundle", async () => {
+    const temp = await mkdtemp(join(tmpdir(), "skillguard-passport-verify-"));
+    const passport = await createSkillPassport("examples/skills/safe-code-reviewer", {
+      sourceUri: source,
+      sourceCommit: commit,
+      publisher: "Gowrav-M",
+      pack: true,
+      outputDir: temp
+    });
+    const artifacts = await writePassportArtifacts(passport, temp);
+    const bundlePath = artifacts.find((artifact) => artifact.endsWith(".skill.tgz"));
+    expect(bundlePath).toBeDefined();
+
+    const verification = await verifySkillPassport(passport, {
+      skillDir: "examples/skills/safe-code-reviewer",
+      bundlePath
+    });
+
+    expect(verification.valid).toBe(true);
+    expect(verification.checked.skillDigest).toBe(true);
+    expect(verification.checked.bundleDigest).toBe(true);
+  });
+
+  it("fails passport verification when the skill changed after approval", async () => {
+    const temp = await mkdtemp(join(tmpdir(), "skillguard-passport-drift-"));
+    const skillCopy = join(temp, "safe-code-reviewer");
+    await cp("examples/skills/safe-code-reviewer", skillCopy, { recursive: true });
+    const passport = await createSkillPassport(skillCopy, {
+      sourceUri: source,
+      sourceCommit: commit,
+      publisher: "Gowrav-M"
+    });
+    await writeFile(join(skillCopy, "SKILL.md"), "# changed after approval\n", "utf8");
+
+    const verification = await verifySkillPassport(passport, { skillDir: skillCopy });
+
+    expect(verification.valid).toBe(false);
+    expect(verification.reasons.some((reason) => reason.code === "passport.skill_digest_mismatch")).toBe(true);
   });
 });

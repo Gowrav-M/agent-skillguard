@@ -31,6 +31,24 @@ agent-skillguard passport ./skills/code-reviewer \
 .skillguard/passports/<skill-name>/<skill-name>.skill.tgz
 ```
 
+## Verification
+
+Passports are meant to be checked later by another developer, reviewer, or CI job:
+
+```bash
+agent-skillguard verify-passport .skillguard/passports/code-reviewer/passport.json \
+  --skill-dir ./skills/code-reviewer \
+  --bundle .skillguard/passports/code-reviewer/code-reviewer.skill.tgz
+```
+
+Verification checks:
+
+- passport schema
+- embedded lock digest
+- optional current skill digest
+- optional bundle digest
+- consistency between the passport decision and embedded control decisions
+
 ## Decision Semantics
 
 | Decision | Meaning |

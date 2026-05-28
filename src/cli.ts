@@ -8,7 +8,7 @@ import { evaluateCapabilityContracts, writeContractArtifacts } from "./core/cont
 import { ensureDir, readJsonFile, writeJsonFile } from "./core/files.js";
 import { createSkillLock, defaultLockPathForSkill, readSkillLock, verifySkillLock, writeSkillLock } from "./core/lockfile.js";
 import { packSkillBundle, verifySkillBundle } from "./core/pack.js";
-import { createSkillPassport, defaultPassportOutputDir, writePassportArtifacts } from "./core/passport.js";
+import { createSkillPassport, defaultPassportOutputDir, readSkillPassport, verifySkillPassport, writePassportArtifacts, writePassportVerificationArtifacts } from "./core/passport.js";
 import { defaultSkillGuardPolicy, evaluateAdmissionWithOptionalLock } from "./core/policy.js";
 import { createSkillProvenance, defaultSkillTrustPolicy, evaluateSkillTrust, writeTrustArtifacts } from "./core/provenance.js";
 import { renderHtmlReport, renderMarkdownReport, renderSarifReport } from "./core/report.js";
@@ -17,7 +17,7 @@ import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.6.0";
+const version = "0.7.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -264,6 +264,34 @@ program
     if (passport.decision === "block") {
       console.error("Passport blocked");
       process.exitCode = 1;
+    }
+  });
+
+program
+  .command("verify-passport")
+  .argument("<passport-json>", "Passport JSON file to verify.")
+  .option("--skill-dir <path>", "Current skill directory to compare with the passport digest.")
+  .option("--bundle <path>", "Skill bundle to compare with the passport bundle digest.")
+  .description("Verify that a Skill Passport still matches its approved evidence.")
+  .action(async (passportJson: string, options: { skillDir?: string; bundle?: string }) => {
+    const passport = await readSkillPassport(resolve(process.cwd(), passportJson));
+    const verificationOptions: Parameters<typeof verifySkillPassport>[1] = {};
+    if (options.skillDir !== undefined) verificationOptions.skillDir = resolve(process.cwd(), options.skillDir);
+    if (options.bundle !== undefined) verificationOptions.bundlePath = resolve(process.cwd(), options.bundle);
+    const verification = await verifySkillPassport(passport, verificationOptions);
+    const artifacts = await writePassportVerificationArtifacts(verification, localPaths(process.cwd()).reportsDir);
+
+    if (verification.valid) {
+      console.log("Passport verification passed");
+    } else {
+      console.error("Passport verification failed");
+      process.exitCode = 1;
+    }
+    for (const artifact of artifacts) {
+      console.log(`Wrote ${artifact}`);
+    }
+    for (const reason of verification.reasons) {
+      console.error(`- [${reason.severity}] ${reason.code}: ${reason.target}`);
     }
   });
 

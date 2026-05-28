@@ -14,6 +14,7 @@ Try:
 
 ```bash
 npx agent-skillguard passport examples/skills/safe-code-reviewer --source https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/safe-code-reviewer --commit 0123456789abcdef0123456789abcdef01234567 --publisher Gowrav-M --pack
+npx agent-skillguard verify-passport .skillguard/passports/safe-code-reviewer/passport.json --skill-dir examples/skills/safe-code-reviewer --bundle .skillguard/passports/safe-code-reviewer/safe-code-reviewer.skill.tgz
 npx agent-skillguard scan examples/skills --sarif
 npx agent-skillguard trust examples/skills/safe-code-reviewer --source https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/safe-code-reviewer --commit 0123456789abcdef0123456789abcdef01234567 --publisher Gowrav-M
 npx agent-skillguard contract examples/skills

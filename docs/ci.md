@@ -57,3 +57,14 @@ When a repository vendors approved skills and receives candidate updates in a se
 ```yaml
 - run: npx agent-skillguard review-update ./skills-approved/code-reviewer ./skills-incoming/code-reviewer
 ```
+
+## Passport Verification
+
+For retained approval artifacts, verify that a passport still matches the vendored skill:
+
+```yaml
+- run: >
+    npx agent-skillguard verify-passport
+    .skillguard/passports/code-reviewer/passport.json
+    --skill-dir ./skills/code-reviewer
+```

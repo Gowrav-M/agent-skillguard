@@ -79,6 +79,35 @@ export const skillGuardReportSchema = z.object({
   findings: z.array(skillFindingSchema)
 });
 
+export const skillGuardPolicySchema = z.object({
+  schemaVersion: z.literal(1),
+  blockOnSeverity: severitySchema.default("critical"),
+  deniedCapabilities: z.array(capabilitySchema).default(["secret-access", "mcp-tool-mutation"]),
+  requireLockfile: z.boolean().default(false),
+  requireCleanScan: z.boolean().default(false),
+  allowInstallScripts: z.boolean().default(false)
+});
+
+export const admissionReasonSchema = z.object({
+  severity: severitySchema,
+  code: z.string().min(1),
+  message: z.string().min(1),
+  target: z.string().min(1)
+});
+
+export const skillAdmissionDecisionSchema = z.object({
+  generatedAt: z.string().datetime(),
+  decision: z.enum(["allow", "review", "block"]),
+  summary: z.object({
+    skills: z.number().int().nonnegative(),
+    findings: z.number().int().nonnegative(),
+    riskScore: z.number().int().min(0).max(100)
+  }),
+  policy: skillGuardPolicySchema,
+  reasons: z.array(admissionReasonSchema),
+  report: skillGuardReportSchema
+});
+
 export type Severity = z.infer<typeof severitySchema>;
 export type SkillCapability = z.infer<typeof capabilitySchema>;
 export type SkillManifest = z.infer<typeof skillManifestSchema>;
@@ -89,3 +118,6 @@ export type SkillBomEntry = z.infer<typeof skillBomEntrySchema>;
 export type SkillBom = z.infer<typeof skillBomSchema>;
 export type SkillLock = z.infer<typeof skillLockSchema>;
 export type SkillGuardReport = z.infer<typeof skillGuardReportSchema>;
+export type SkillGuardPolicy = z.infer<typeof skillGuardPolicySchema>;
+export type AdmissionReason = z.infer<typeof admissionReasonSchema>;
+export type SkillAdmissionDecision = z.infer<typeof skillAdmissionDecisionSchema>;

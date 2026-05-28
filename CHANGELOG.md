@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- Added enterprise skill admission control with `ALLOW`, `REVIEW`, and `BLOCK` decisions.
+- Added `policy` and `admit` CLI commands.
+- Added policy-as-code support for blocked severities, denied capabilities, clean-scan requirements, install-script policy, and optional lockfile enforcement.
+- Added admission JSON/Markdown reports and documentation.
+
 ## 0.1.0
 
 - Initial local-first CLI for agent skill supply-chain safety.

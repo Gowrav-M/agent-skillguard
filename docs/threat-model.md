@@ -29,3 +29,4 @@ SkillGuard is a static and packaging safety gate. It does not sandbox runtime ex
 - Deterministic: reports, locks, and bundles are reproducible.
 - Evidence-first: every finding includes a target, evidence, severity, and recommendation.
 - CI-friendly: SARIF output and fail thresholds make unsafe skills blockable in pull requests.
+- Admission-first: organizations can turn skill risk into explicit allow, review, or block decisions before install.

@@ -1,9 +1,10 @@
 # Agent SkillGuard
 
-Agent skills are executable supply chain. `agent-skillguard` scans, locks, packages, and verifies AI agent skills before developers install or run them.
+Agent skills are executable supply chain. `agent-skillguard` scans, admits, locks, packages, and verifies AI agent skills before developers install or run them.
 
 ```bash
 npx agent-skillguard demo
+npx agent-skillguard admit ./skills
 npx agent-skillguard scan ./skills
 npx agent-skillguard pack ./skills/code-reviewer
 npx agent-skillguard verify ./code-reviewer.skill.tgz
@@ -15,11 +16,12 @@ npx agent-skillguard verify ./code-reviewer.skill.tgz
 
 Skills for Codex, Claude Code, Cursor, OpenCode, MCP workflows, and internal agents often look like Markdown prompts, but they can include scripts, install hooks, tool descriptors, hidden instructions, and broad permissions. That makes them a new package-management problem.
 
-`agent-skillguard` is not another skill list and not another agent framework. It is a local-first safety gate for agent skills:
+`agent-skillguard` is not another skill list and not another agent framework. It is a local-first admission controller for agent skills:
 
 - Finds hidden prompt injection and policy override text in Markdown, YAML, HTML comments, and code blocks.
 - Flags secret exfiltration, credential harvesting, persistence, broad deletes, and download-execute installer chains.
 - Detects risky bundle structure such as symlinks, hidden files, binaries, oversized payloads, and path traversal.
+- Makes `ALLOW`, `REVIEW`, or `BLOCK` admission decisions from policy-as-code.
 - Builds a `SkillBOM`, an SBOM-like inventory for agent skills.
 - Writes `skillguard.lock.json` with reproducible file hashes and declared capabilities.
 - Packs deterministic `.skill.tgz` bundles with embedded locks.
@@ -63,6 +65,8 @@ Recommendation: remove the instruction and require host policy compliance
 ```bash
 agent-skillguard init
 agent-skillguard demo
+agent-skillguard policy
+agent-skillguard admit <path> [--require-lock] [--sarif]
 agent-skillguard scan <path> [--sarif] [--fail-on critical]
 agent-skillguard lock <skill-dir>
 agent-skillguard pack <skill-dir>
@@ -80,6 +84,33 @@ agent-skillguard doctor
 - A package manifest uses install hooks to run code during setup.
 - A skill changes after review, but the lockfile catches the hash drift.
 
+## Admission Control
+
+The breakthrough path is governance, not just scanning. Enterprises need to answer one question before a skill enters a project:
+
+> Is this skill allowed to run here?
+
+Create a policy:
+
+```bash
+agent-skillguard policy
+```
+
+Then gate skills:
+
+```bash
+agent-skillguard admit ./skills --require-lock --sarif
+```
+
+Admission writes:
+
+```text
+.skillguard/reports/skillguard-admission.json
+.skillguard/reports/skillguard-admission.md
+```
+
+Default policy blocks critical findings, secret access, MCP tool mutation, and unapproved install-script behavior. Teams can tighten this to require clean scans and lockfiles for every approved skill.
+
 ## Compared With Other Tools
 
 | Tool Type | What It Does | SkillGuard Difference |
@@ -87,6 +118,7 @@ agent-skillguard doctor
 | Skill lists | Curate useful prompts and workflows | Verifies skill safety before install or publish |
 | Agent frameworks | Run agents and tools | Does not run agents; audits skill supply chain |
 | MCP scanners | Inspect MCP tool descriptors | Scans skills, scripts, manifests, bundles, locks, and SARIF |
+| OpenSSF Scorecard | Scores open-source project security posture | Skill-specific admission decisions and SkillBOMs |
 | Watchtower | Runtime AgentOps and MCP attack-path analysis | SkillGuard handles pre-install and pre-publish skill safety |
 
 ## CI Gate
@@ -101,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npx agent-skillguard scan ./skills --sarif --fail-on high
+      - run: npx agent-skillguard admit ./skills --require-lock --sarif
       - uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:

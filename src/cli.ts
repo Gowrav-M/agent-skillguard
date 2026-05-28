@@ -7,12 +7,13 @@ import { Command, InvalidArgumentError } from "commander";
 import { ensureDir, readJsonFile, writeJsonFile } from "./core/files.js";
 import { createSkillLock, defaultLockPathForSkill, readSkillLock, verifySkillLock, writeSkillLock } from "./core/lockfile.js";
 import { packSkillBundle, verifySkillBundle } from "./core/pack.js";
+import { defaultSkillGuardPolicy, evaluateAdmissionWithOptionalLock } from "./core/policy.js";
 import { renderHtmlReport, renderMarkdownReport, renderSarifReport } from "./core/report.js";
 import { meetsThreshold } from "./core/risk.js";
 import { scanSkillPath } from "./core/scanner.js";
-import { severitySchema, skillGuardReportSchema, type Severity, type SkillFinding, type SkillGuardReport } from "./core/schemas.js";
+import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 
-const version = "0.1.0";
+const version = "0.2.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -79,6 +80,54 @@ program
       console.log(`Wrote ${artifact}`);
     }
     applyThreshold(report.findings, options.failOn);
+  });
+
+program
+  .command("admit")
+  .argument("<path>", "Skill directory or directory containing multiple SKILL.md files.")
+  .description("Run enterprise admission control using policy-as-code.")
+  .option("--policy <path>", "Policy JSON path. Defaults to .skillguard/policy.json when present.")
+  .option("--require-lock", "Require skillguard.lock.json for each skill.", false)
+  .option("--sarif", "Write SARIF output.", false)
+  .action(async (path: string, options: { policy?: string; requireLock?: boolean; sarif?: boolean }) => {
+    const target = resolve(process.cwd(), path);
+    const report = await scanSkillPath(target);
+    const basePolicy = await loadPolicy(process.cwd(), options.policy);
+    const policy = {
+      ...basePolicy,
+      requireLockfile: options.requireLock === true || basePolicy.requireLockfile
+    };
+    const decision = await evaluateAdmissionWithOptionalLock(target, report, policy);
+    const artifacts = await writeReportArtifacts(report, process.cwd(), { sarif: options.sarif ?? true });
+    const paths = localPaths(process.cwd());
+    await writeJsonFile(paths.admissionJson, decision);
+    await writeFile(paths.admissionMarkdown, renderAdmissionMarkdown(decision), "utf8");
+
+    console.log(`Admission decision: ${decision.decision.toUpperCase()}`);
+    console.log(`Risk score: ${decision.summary.riskScore}/100`);
+    console.log(`Reasons: ${decision.reasons.length}`);
+    for (const artifact of [...artifacts, paths.admissionJson, paths.admissionMarkdown]) {
+      console.log(`Wrote ${artifact}`);
+    }
+
+    if (decision.decision === "block") {
+      console.error("Admission blocked");
+      for (const reason of decision.reasons) {
+        console.error(`- [${reason.severity}] ${reason.code}: ${reason.target}`);
+      }
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command("policy")
+  .description("Create a default enterprise SkillGuard policy.")
+  .option("-o, --output <path>", "Policy output path.")
+  .action(async (options: { output?: string }) => {
+    const paths = localPaths(process.cwd());
+    const output = resolve(process.cwd(), options.output ?? paths.policyJson);
+    await writeJsonFile(output, defaultSkillGuardPolicy());
+    console.log(`Wrote ${output}`);
   });
 
 program
@@ -168,17 +217,20 @@ function parseSeverity(value: string): Severity {
   return parsed.data;
 }
 
-function localPaths(cwd: string): { root: string; configPath: string; reportsDir: string; reportJson: string; reportMarkdown: string; reportHtml: string; reportSarif: string } {
+function localPaths(cwd: string): { root: string; configPath: string; policyJson: string; reportsDir: string; reportJson: string; reportMarkdown: string; reportHtml: string; reportSarif: string; admissionJson: string; admissionMarkdown: string } {
   const root = join(cwd, ".skillguard");
   const reportsDir = join(root, "reports");
   return {
     root,
     configPath: join(root, "config.json"),
+    policyJson: join(root, "policy.json"),
     reportsDir,
     reportJson: join(reportsDir, "skillguard-report.json"),
     reportMarkdown: join(reportsDir, "skillguard-report.md"),
     reportHtml: join(reportsDir, "skillguard-report.html"),
-    reportSarif: join(reportsDir, "skillguard-report.sarif")
+    reportSarif: join(reportsDir, "skillguard-report.sarif"),
+    admissionJson: join(reportsDir, "skillguard-admission.json"),
+    admissionMarkdown: join(reportsDir, "skillguard-admission.md")
   };
 }
 
@@ -259,4 +311,42 @@ async function runDoctor(cwd: string): Promise<Array<{ name: string; ok: boolean
   }
 
   return checks;
+}
+
+async function loadPolicy(cwd: string, explicitPath: string | undefined): Promise<SkillGuardPolicy> {
+  const paths = localPaths(cwd);
+  const policyPath = explicitPath === undefined ? paths.policyJson : resolve(cwd, explicitPath);
+  try {
+    return skillGuardPolicySchema.parse({
+      ...defaultSkillGuardPolicy(),
+      ...(await readJsonFile<Partial<SkillGuardPolicy>>(policyPath))
+    });
+  } catch {
+    return defaultSkillGuardPolicy();
+  }
+}
+
+function renderAdmissionMarkdown(decision: SkillAdmissionDecision): string {
+  const lines = [
+    "# SkillGuard Admission Decision",
+    "",
+    `Decision: **${decision.decision.toUpperCase()}**`,
+    "",
+    `- Skills: ${decision.summary.skills}`,
+    `- Findings: ${decision.summary.findings}`,
+    `- Risk score: ${decision.summary.riskScore}/100`,
+    "",
+    "## Reasons",
+    ""
+  ];
+
+  if (decision.reasons.length === 0) {
+    lines.push("No blocking or review reasons.");
+  } else {
+    for (const reason of decision.reasons) {
+      lines.push(`- [${reason.severity.toUpperCase()}] ${reason.code} at \`${reason.target}\`: ${reason.message}`);
+    }
+  }
+
+  return `${lines.join("\n")}\n`;
 }

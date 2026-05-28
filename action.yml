@@ -6,15 +6,20 @@ inputs:
     description: Skill directory or directory containing skills.
     required: false
     default: skills
-  fail-on:
-    description: Severity threshold that fails the action.
+  require-lock:
+    description: Require skillguard.lock.json for each admitted skill.
     required: false
-    default: high
+    default: "false"
 runs:
   using: composite
   steps:
     - shell: bash
-      run: npx agent-skillguard scan "${{ inputs.path }}" --sarif --fail-on "${{ inputs.fail-on }}"
+      run: |
+        args=""
+        if [ "${{ inputs.require-lock }}" = "true" ]; then
+          args="$args --require-lock"
+        fi
+        npx agent-skillguard admit "${{ inputs.path }}" --sarif $args
 branding:
   icon: shield
   color: blue

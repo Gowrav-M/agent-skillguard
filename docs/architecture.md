@@ -19,6 +19,10 @@ Creates an SBOM-like inventory containing:
 
 Writes `skillguard.lock.json` with the current file inventory and hashes. Verification fails when files are missing, added, resized, or modified.
 
+## Admission Controller
+
+Evaluates a scan against policy-as-code. It turns findings and SkillBOM capabilities into `ALLOW`, `REVIEW`, or `BLOCK` decisions for local installs and CI gates.
+
 ## Packer
 
 Creates deterministic `.skill.tgz` bundles with an embedded lockfile and canonical file payloads.

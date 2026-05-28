@@ -17,4 +17,10 @@ describe("CLI", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Policy threshold failed");
   });
+
+  it("admit blocks unsafe skills", async () => {
+    const result = await execaNode(["src/cli.ts", "admit", "examples/skills/prompt-injected-skill"], process.cwd());
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Admission blocked");
+  });
 });

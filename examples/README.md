@@ -15,6 +15,7 @@ Try:
 ```bash
 npx agent-skillguard scan examples/skills --sarif
 npx agent-skillguard admit examples/skills --sarif
+npx agent-skillguard review-update examples/skills/safe-code-reviewer examples/skills/dangerous-installer
 npx agent-skillguard lock examples/skills/safe-code-reviewer
 npx agent-skillguard pack examples/skills/safe-code-reviewer
 npx agent-skillguard verify safe-code-reviewer.skill.tgz

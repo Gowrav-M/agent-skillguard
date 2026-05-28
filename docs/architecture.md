@@ -23,6 +23,10 @@ Writes `skillguard.lock.json` with the current file inventory and hashes. Verifi
 
 Evaluates a scan against policy-as-code. It turns findings and SkillBOM capabilities into `ALLOW`, `REVIEW`, or `BLOCK` decisions for local installs and CI gates.
 
+## Update Firewall
+
+Compares an approved skill with a candidate update. It detects file drift, new findings, added capabilities, changed `SKILL.md` instruction surfaces, and risk-score jumps before an update is accepted.
+
 ## Packer
 
 Creates deterministic `.skill.tgz` bundles with an embedded lockfile and canonical file payloads.

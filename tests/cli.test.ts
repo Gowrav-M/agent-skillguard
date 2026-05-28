@@ -23,4 +23,10 @@ describe("CLI", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Admission blocked");
   });
+
+  it("review-update blocks risky skill upgrades", async () => {
+    const result = await execaNode(["src/cli.ts", "review-update", "examples/skills/safe-code-reviewer", "examples/skills/dangerous-installer"], process.cwd());
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Update blocked");
+  });
 });

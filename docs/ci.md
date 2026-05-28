@@ -26,3 +26,11 @@ jobs:
 ```
 
 For early rollout, use `agent-skillguard admit ./skills --sarif` without `--require-lock`. Once the team has approved skill locks, enable `--require-lock` so unreviewed skill drift fails pull requests.
+
+## Update Review
+
+When a repository vendors approved skills and receives candidate updates in a separate folder, block risky drift:
+
+```yaml
+- run: npx agent-skillguard review-update ./skills-approved/code-reviewer ./skills-incoming/code-reviewer
+```

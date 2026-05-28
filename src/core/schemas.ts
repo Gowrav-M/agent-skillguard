@@ -108,6 +108,24 @@ export const skillAdmissionDecisionSchema = z.object({
   report: skillGuardReportSchema
 });
 
+export const skillUpdateReviewSchema = z.object({
+  generatedAt: z.string().datetime(),
+  decision: z.enum(["allow", "review", "block"]),
+  summary: z.object({
+    previousRiskScore: z.number().int().min(0).max(100),
+    candidateRiskScore: z.number().int().min(0).max(100),
+    addedCapabilities: z.array(capabilitySchema),
+    removedCapabilities: z.array(capabilitySchema),
+    addedFiles: z.array(z.string()),
+    removedFiles: z.array(z.string()),
+    modifiedFiles: z.array(z.string()),
+    newFindings: z.number().int().nonnegative()
+  }),
+  reasons: z.array(admissionReasonSchema),
+  previous: skillGuardReportSchema,
+  candidate: skillGuardReportSchema
+});
+
 export type Severity = z.infer<typeof severitySchema>;
 export type SkillCapability = z.infer<typeof capabilitySchema>;
 export type SkillManifest = z.infer<typeof skillManifestSchema>;
@@ -121,3 +139,4 @@ export type SkillGuardReport = z.infer<typeof skillGuardReportSchema>;
 export type SkillGuardPolicy = z.infer<typeof skillGuardPolicySchema>;
 export type AdmissionReason = z.infer<typeof admissionReasonSchema>;
 export type SkillAdmissionDecision = z.infer<typeof skillAdmissionDecisionSchema>;
+export type SkillUpdateReview = z.infer<typeof skillUpdateReviewSchema>;

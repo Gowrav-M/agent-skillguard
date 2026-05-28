@@ -1,10 +1,11 @@
 # Agent SkillGuard
 
-Agent skills are executable supply chain. `agent-skillguard` scans, admits, locks, packages, and verifies AI agent skills before developers install or run them.
+Agent skills are executable supply chain. `agent-skillguard` scans, admits, reviews updates, locks, packages, and verifies AI agent skills before developers install or run them.
 
 ```bash
 npx agent-skillguard demo
 npx agent-skillguard admit ./skills
+npx agent-skillguard review-update ./approved/skill ./candidate/skill
 npx agent-skillguard scan ./skills
 npx agent-skillguard pack ./skills/code-reviewer
 npx agent-skillguard verify ./code-reviewer.skill.tgz
@@ -22,6 +23,7 @@ Skills for Codex, Claude Code, Cursor, OpenCode, MCP workflows, and internal age
 - Flags secret exfiltration, credential harvesting, persistence, broad deletes, and download-execute installer chains.
 - Detects risky bundle structure such as symlinks, hidden files, binaries, oversized payloads, and path traversal.
 - Makes `ALLOW`, `REVIEW`, or `BLOCK` admission decisions from policy-as-code.
+- Reviews candidate skill updates for capability drift, new findings, changed instruction surfaces, file drift, and risk-score jumps.
 - Builds a `SkillBOM`, an SBOM-like inventory for agent skills.
 - Writes `skillguard.lock.json` with reproducible file hashes and declared capabilities.
 - Packs deterministic `.skill.tgz` bundles with embedded locks.
@@ -67,6 +69,7 @@ agent-skillguard init
 agent-skillguard demo
 agent-skillguard policy
 agent-skillguard admit <path> [--require-lock] [--sarif]
+agent-skillguard review-update <approved-skill> <candidate-skill>
 agent-skillguard scan <path> [--sarif] [--fail-on critical]
 agent-skillguard lock <skill-dir>
 agent-skillguard pack <skill-dir>
@@ -110,6 +113,23 @@ Admission writes:
 ```
 
 Default policy blocks critical findings, secret access, MCP tool mutation, and unapproved install-script behavior. Teams can tighten this to require clean scans and lockfiles for every approved skill.
+
+## Update Firewall
+
+Most supply-chain compromises arrive as updates, not first installs. SkillGuard can compare an approved skill with a candidate replacement:
+
+```bash
+agent-skillguard review-update ./approved/code-reviewer ./incoming/code-reviewer
+```
+
+It blocks risky drift when the candidate adds dangerous capabilities, introduces new high/critical findings, changes the main `SKILL.md` instruction surface, or jumps materially in risk score.
+
+Update review writes:
+
+```text
+.skillguard/reports/skillguard-update-review.json
+.skillguard/reports/skillguard-update-review.md
+```
 
 ## Compared With Other Tools
 

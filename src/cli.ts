@@ -12,8 +12,9 @@ import { renderHtmlReport, renderMarkdownReport, renderSarifReport } from "./cor
 import { meetsThreshold } from "./core/risk.js";
 import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
+import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.2.0";
+const version = "0.3.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -114,6 +115,33 @@ program
       console.error("Admission blocked");
       for (const reason of decision.reasons) {
         console.error(`- [${reason.severity}] ${reason.code}: ${reason.target}`);
+      }
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command("review-update")
+  .argument("<approved-skill>", "Previously approved skill directory.")
+  .argument("<candidate-skill>", "Candidate replacement skill directory.")
+  .description("Compare an approved skill with a candidate update and block risky drift.")
+  .action(async (approvedSkill: string, candidateSkill: string) => {
+    const paths = localPaths(process.cwd());
+    const review = await reviewSkillUpdate(resolve(process.cwd(), approvedSkill), resolve(process.cwd(), candidateSkill));
+    await ensureDir(paths.reportsDir);
+    const artifacts = await writeUpdateReviewArtifacts(review, paths.reportsDir);
+
+    console.log(`Update decision: ${review.decision.toUpperCase()}`);
+    console.log(`Risk score: ${review.summary.previousRiskScore}/100 -> ${review.summary.candidateRiskScore}/100`);
+    console.log(`Added capabilities: ${review.summary.addedCapabilities.join(", ") || "none"}`);
+    for (const artifact of artifacts) {
+      console.log(`Wrote ${artifact}`);
+    }
+
+    if (review.decision === "block") {
+      console.error("Update blocked");
+      for (const item of review.reasons) {
+        console.error(`- [${item.severity}] ${item.code}: ${item.target}`);
       }
       process.exitCode = 1;
     }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Added the Skill Update Firewall with `review-update`.
+- Detects added capabilities, added/removed/modified files, new findings, changed `SKILL.md` instruction surfaces, and risk-score jumps between approved and candidate skill versions.
+- Added update review JSON/Markdown reports and documentation.
+
 ## 0.2.0
 
 - Added enterprise skill admission control with `ALLOW`, `REVIEW`, and `BLOCK` decisions.

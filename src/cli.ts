@@ -8,13 +8,14 @@ import { ensureDir, readJsonFile, writeJsonFile } from "./core/files.js";
 import { createSkillLock, defaultLockPathForSkill, readSkillLock, verifySkillLock, writeSkillLock } from "./core/lockfile.js";
 import { packSkillBundle, verifySkillBundle } from "./core/pack.js";
 import { defaultSkillGuardPolicy, evaluateAdmissionWithOptionalLock } from "./core/policy.js";
+import { createSkillProvenance, defaultSkillTrustPolicy, evaluateSkillTrust, writeTrustArtifacts } from "./core/provenance.js";
 import { renderHtmlReport, renderMarkdownReport, renderSarifReport } from "./core/report.js";
 import { meetsThreshold } from "./core/risk.js";
 import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.3.0";
+const version = "0.4.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -142,6 +143,57 @@ program
       console.error("Update blocked");
       for (const item of review.reasons) {
         console.error(`- [${item.severity}] ${item.code}: ${item.target}`);
+      }
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command("trust")
+  .argument("<skill-dir>", "Skill directory to evaluate.")
+  .requiredOption("--source <uri>", "Source URI for the skill.")
+  .option("--commit <sha>", "Immutable source commit hash.")
+  .option("--ref <ref>", "Source ref, branch, or tag.")
+  .option("--publisher <name>", "Publisher or owner identity.")
+  .option("--allow-host <host...>", "Allowed source hosts.")
+  .option("--allow-publisher <publisher...>", "Allowed publisher identities.")
+  .option("--write", "Write skillguard.provenance.json into the skill directory.", false)
+  .description("Evaluate skill provenance and block untrusted mutable sources.")
+  .action(async (skillDir: string, options: { source: string; commit?: string; ref?: string; publisher?: string; allowHost?: string[]; allowPublisher?: string[]; write?: boolean }) => {
+    const absoluteSkillDir = resolve(process.cwd(), skillDir);
+    const paths = localPaths(process.cwd());
+    const provenanceOptions: Parameters<typeof createSkillProvenance>[1] = {
+      sourceUri: options.source
+    };
+    if (options.commit !== undefined) provenanceOptions.sourceCommit = options.commit;
+    if (options.ref !== undefined) provenanceOptions.sourceRef = options.ref;
+    if (options.publisher !== undefined) provenanceOptions.publisher = options.publisher;
+    const provenance = await createSkillProvenance(absoluteSkillDir, provenanceOptions);
+    const policy = {
+      ...defaultSkillTrustPolicy(),
+      allowedHosts: options.allowHost ?? defaultSkillTrustPolicy().allowedHosts,
+      allowedPublishers: options.allowPublisher ?? defaultSkillTrustPolicy().allowedPublishers
+    };
+    const decision = evaluateSkillTrust(provenance, policy);
+    await ensureDir(paths.reportsDir);
+    const artifacts = await writeTrustArtifacts(decision, paths.reportsDir);
+    if (options.write === true) {
+      const provenancePath = join(absoluteSkillDir, "skillguard.provenance.json");
+      await writeJsonFile(provenancePath, provenance);
+      artifacts.push(provenancePath);
+    }
+
+    console.log(`Trust decision: ${decision.decision.toUpperCase()}`);
+    console.log(`Source: ${decision.provenance.sourceUri}`);
+    console.log(`Digest: ${decision.provenance.skillDigest}`);
+    for (const artifact of artifacts) {
+      console.log(`Wrote ${artifact}`);
+    }
+
+    if (decision.decision === "block") {
+      console.error("Trust blocked");
+      for (const reason of decision.reasons) {
+        console.error(`- [${reason.severity}] ${reason.code}: ${reason.target}`);
       }
       process.exitCode = 1;
     }

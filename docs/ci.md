@@ -25,6 +25,18 @@ jobs:
           sarif_file: .skillguard/reports/skillguard-report.sarif
 ```
 
+## Provenance Gate
+
+For vendored skills, require immutable source metadata:
+
+```yaml
+- run: >
+    npx agent-skillguard trust ./skills/code-reviewer
+    --source https://github.com/org/repo/tree/main/skills/code-reviewer
+    --commit ${{ github.sha }}
+    --publisher org
+```
+
 For early rollout, use `agent-skillguard admit ./skills --sarif` without `--require-lock`. Once the team has approved skill locks, enable `--require-lock` so unreviewed skill drift fails pull requests.
 
 ## Update Review

@@ -126,6 +126,36 @@ export const skillUpdateReviewSchema = z.object({
   candidate: skillGuardReportSchema
 });
 
+export const skillProvenanceSchema = z.object({
+  schemaVersion: z.literal(1),
+  generatedAt: z.string().datetime(),
+  skillName: z.string().min(1),
+  sourceUri: z.string().min(1),
+  sourceHost: z.string().min(1),
+  sourceOwner: z.string().optional(),
+  sourceRepo: z.string().optional(),
+  sourceRef: z.string().optional(),
+  sourceCommit: z.string().optional(),
+  publisher: z.string().optional(),
+  skillDigest: z.string().regex(/^sha256:[a-f0-9]{64}$/)
+});
+
+export const skillTrustPolicySchema = z.object({
+  schemaVersion: z.literal(1),
+  allowedHosts: z.array(z.string().min(1)).default(["github.com"]),
+  allowedPublishers: z.array(z.string().min(1)).default([]),
+  requirePinnedCommit: z.boolean().default(true),
+  denyMutableRefs: z.boolean().default(true)
+});
+
+export const skillTrustDecisionSchema = z.object({
+  generatedAt: z.string().datetime(),
+  decision: z.enum(["allow", "review", "block"]),
+  provenance: skillProvenanceSchema,
+  policy: skillTrustPolicySchema,
+  reasons: z.array(admissionReasonSchema)
+});
+
 export type Severity = z.infer<typeof severitySchema>;
 export type SkillCapability = z.infer<typeof capabilitySchema>;
 export type SkillManifest = z.infer<typeof skillManifestSchema>;
@@ -140,3 +170,6 @@ export type SkillGuardPolicy = z.infer<typeof skillGuardPolicySchema>;
 export type AdmissionReason = z.infer<typeof admissionReasonSchema>;
 export type SkillAdmissionDecision = z.infer<typeof skillAdmissionDecisionSchema>;
 export type SkillUpdateReview = z.infer<typeof skillUpdateReviewSchema>;
+export type SkillProvenance = z.infer<typeof skillProvenanceSchema>;
+export type SkillTrustPolicy = z.infer<typeof skillTrustPolicySchema>;
+export type SkillTrustDecision = z.infer<typeof skillTrustDecisionSchema>;

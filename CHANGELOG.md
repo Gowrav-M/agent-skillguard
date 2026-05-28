@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- Added the Skill Provenance Firewall with `trust`.
+- Records source URI, source host, owner, repo, ref, commit, publisher, and skill digest.
+- Blocks unpinned mutable sources, unapproved hosts, invalid commit pins, and unapproved publishers.
+- Added trust JSON/Markdown reports and optional `skillguard.provenance.json` output.
+
 ## 0.3.0
 
 - Added the Skill Update Firewall with `review-update`.

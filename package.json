@@ -1,7 +1,7 @@
 {
   "name": "agent-skillguard",
-  "version": "0.3.0",
-  "description": "Local-first admission controller, update firewall, supply-chain scanner, packer, lockfile, and verifier for AI agent skills.",
+  "version": "0.4.0",
+  "description": "Local-first provenance firewall, admission controller, update firewall, scanner, packer, lockfile, and verifier for AI agent skills.",
   "type": "module",
   "bin": {
     "agent-skillguard": "dist/cli.js"

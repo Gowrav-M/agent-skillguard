@@ -29,4 +29,10 @@ describe("CLI", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Update blocked");
   });
+
+  it("trust blocks unpinned mutable skill sources", async () => {
+    const result = await execaNode(["src/cli.ts", "trust", "examples/skills/safe-code-reviewer", "--source", "https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/safe-code-reviewer"], process.cwd());
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Trust blocked");
+  });
 });

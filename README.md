@@ -1,8 +1,14 @@
 # Agent SkillGuard
 
-Agent skills are executable supply chain. `agent-skillguard` checks provenance, enforces capability contracts, admits, reviews updates, scans, locks, packages, and verifies AI agent skills before developers install or run them.
+Agent skills are executable supply chain. `agent-skillguard` creates a local-first Skill Passport: a portable approval record showing where a skill came from, what it can do, why it was allowed or blocked, and what exact digest was reviewed.
 
 ```bash
+npx agent-skillguard passport ./skills/code-reviewer \
+  --source https://github.com/org/repo/tree/main/skills/code-reviewer \
+  --commit <sha> \
+  --publisher org \
+  --pack
+
 npx agent-skillguard demo
 npx agent-skillguard trust ./skills/code-reviewer --source https://github.com/org/repo/tree/main/skills/code-reviewer --commit <sha>
 npx agent-skillguard contract ./skills
@@ -21,6 +27,7 @@ Skills for Codex, Claude Code, Cursor, OpenCode, MCP workflows, and internal age
 
 `agent-skillguard` is not another skill list and not another agent framework. It is a local-first admission controller for agent skills:
 
+- Creates a shareable Skill Passport that combines provenance, scan, contract, admission, lock, and optional bundle evidence.
 - Blocks unpinned, mutable, or unapproved skill sources with a provenance firewall.
 - Enforces least-privilege capability contracts from `SKILL.md` declarations.
 - Finds hidden prompt injection and policy override text in Markdown, YAML, HTML comments, and code blocks.
@@ -71,6 +78,7 @@ Recommendation: remove the instruction and require host policy compliance
 ```bash
 agent-skillguard init
 agent-skillguard demo
+agent-skillguard passport <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--pack]
 agent-skillguard policy
 agent-skillguard trust <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--write]
 agent-skillguard contract <path>
@@ -93,6 +101,32 @@ agent-skillguard doctor
 - A package manifest uses install hooks to run code during setup.
 - A skill changes after review, but the lockfile catches the hash drift.
 - A skill source points to a mutable GitHub branch instead of an immutable commit.
+
+## Skill Passport
+
+A Skill Passport is the enterprise approval record for an AI agent skill:
+
+```bash
+agent-skillguard passport ./skills/code-reviewer \
+  --source https://github.com/org/repo/tree/main/skills/code-reviewer \
+  --commit 0123456789abcdef0123456789abcdef01234567 \
+  --publisher org \
+  --pack
+```
+
+It runs provenance, scan, capability contract, admission, lock generation, and optional deterministic packaging in one command.
+
+Passport outputs:
+
+```text
+.skillguard/passports/<skill-name>/passport.json
+.skillguard/passports/<skill-name>/passport.md
+.skillguard/passports/<skill-name>/passport.html
+.skillguard/passports/<skill-name>/skillguard.lock.json
+.skillguard/passports/<skill-name>/<skill-name>.skill.tgz
+```
+
+Use the lower-level commands below when you need to debug one control layer directly.
 
 ## Provenance Firewall
 
@@ -190,7 +224,7 @@ Update review writes:
 
 ## CI Gate
 
-Use SARIF and fail thresholds in pull requests:
+Use Skill Passport in pull requests to retain an approval artifact:
 
 ```yaml
 name: skillguard
@@ -200,11 +234,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: npx agent-skillguard admit ./skills --require-lock --sarif
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: .skillguard/reports/skillguard-report.sarif
+      - run: npx agent-skillguard passport ./skills/code-reviewer --source https://github.com/org/repo/tree/main/skills/code-reviewer --commit ${{ github.sha }} --publisher org
 ```
 
 ## Local Development

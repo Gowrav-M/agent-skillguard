@@ -41,4 +41,36 @@ describe("CLI", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("Contract blocked");
   });
+
+  it("passport allows safe pinned skills", async () => {
+    const result = await execaNode([
+      "src/cli.ts",
+      "passport",
+      "examples/skills/safe-code-reviewer",
+      "--source",
+      "https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/safe-code-reviewer",
+      "--commit",
+      "0123456789abcdef0123456789abcdef01234567",
+      "--publisher",
+      "Gowrav-M"
+    ], process.cwd());
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Passport decision: ALLOW");
+  });
+
+  it("passport blocks unsafe skills", async () => {
+    const result = await execaNode([
+      "src/cli.ts",
+      "passport",
+      "examples/skills/prompt-injected-skill",
+      "--source",
+      "https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/prompt-injected-skill",
+      "--commit",
+      "0123456789abcdef0123456789abcdef01234567",
+      "--publisher",
+      "Gowrav-M"
+    ], process.cwd());
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("Passport blocked");
+  });
 });

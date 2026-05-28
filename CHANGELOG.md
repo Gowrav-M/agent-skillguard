@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+- Added Skill Passport with `passport`.
+- Passport runs provenance, scan, capability contract, admission, lock generation, and optional deterministic packaging.
+- Emits `passport.json`, `passport.md`, `passport.html`, `skillguard.lock.json`, and optional `.skill.tgz` under `.skillguard/passports/<skill-name>/`.
+- Updated README and CI docs to present Passport as the primary enterprise UX.
+
 ## 0.5.0
 
 - Added least-privilege Capability Contracts with `contract`.

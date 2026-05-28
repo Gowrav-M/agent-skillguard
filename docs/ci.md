@@ -18,12 +18,15 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-      - run: npx agent-skillguard admit ./skills --require-lock --sarif
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: .skillguard/reports/skillguard-report.sarif
+      - run: >
+          npx agent-skillguard passport ./skills/code-reviewer
+          --source https://github.com/org/repo/tree/main/skills/code-reviewer
+          --commit ${{ github.sha }}
+          --publisher org
+          --pack
 ```
+
+Use lower-level `scan --sarif` when you specifically want GitHub code scanning ingestion.
 
 ## Provenance Gate
 

@@ -2,6 +2,10 @@
 
 Agent SkillGuard is a local TypeScript CLI with five layers.
 
+## Skill Passport
+
+Composes the core control layers into one portable approval artifact. It embeds provenance, scan, capability contract, admission, lock metadata, and optional bundle digest.
+
 ## Scanner
 
 Walks one skill directory or a collection of `SKILL.md` roots. It fingerprints files, classifies scripts and manifests, infers capabilities, and emits findings.

@@ -8,6 +8,7 @@ import { evaluateCapabilityContracts, writeContractArtifacts } from "./core/cont
 import { ensureDir, readJsonFile, writeJsonFile } from "./core/files.js";
 import { createSkillLock, defaultLockPathForSkill, readSkillLock, verifySkillLock, writeSkillLock } from "./core/lockfile.js";
 import { packSkillBundle, verifySkillBundle } from "./core/pack.js";
+import { createSkillPassport, defaultPassportOutputDir, writePassportArtifacts } from "./core/passport.js";
 import { defaultSkillGuardPolicy, evaluateAdmissionWithOptionalLock } from "./core/policy.js";
 import { createSkillProvenance, defaultSkillTrustPolicy, evaluateSkillTrust, writeTrustArtifacts } from "./core/provenance.js";
 import { renderHtmlReport, renderMarkdownReport, renderSarifReport } from "./core/report.js";
@@ -16,7 +17,7 @@ import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.5.0";
+const version = "0.6.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -223,6 +224,45 @@ program
       for (const reason of decision.reasons) {
         console.error(`- [${reason.severity}] ${reason.code}: ${reason.target}`);
       }
+      process.exitCode = 1;
+    }
+  });
+
+program
+  .command("passport")
+  .argument("<skill-dir>", "Skill directory to approve.")
+  .requiredOption("--source <uri>", "Source URI for the skill.")
+  .option("--commit <sha>", "Immutable source commit hash.")
+  .option("--ref <ref>", "Source ref, branch, or tag.")
+  .option("--publisher <name>", "Publisher or owner identity.")
+  .option("--output <path>", "Passport output directory.")
+  .option("--pack", "Create a deterministic .skill.tgz in the passport directory.", false)
+  .description("Create a portable enterprise approval artifact for a skill.")
+  .action(async (skillDir: string, options: { source: string; commit?: string; ref?: string; publisher?: string; output?: string; pack?: boolean }) => {
+    const absoluteSkillDir = resolve(process.cwd(), skillDir);
+    const passportOptions: Parameters<typeof createSkillPassport>[1] = {
+      sourceUri: options.source,
+      pack: options.pack === true
+    };
+    if (options.commit !== undefined) passportOptions.sourceCommit = options.commit;
+    if (options.ref !== undefined) passportOptions.sourceRef = options.ref;
+    if (options.publisher !== undefined) passportOptions.publisher = options.publisher;
+    if (options.output !== undefined) passportOptions.outputDir = resolve(process.cwd(), options.output);
+
+    const passport = await createSkillPassport(absoluteSkillDir, passportOptions);
+    const outputDir = passportOptions.outputDir ?? defaultPassportOutputDir(process.cwd(), passport.skillName);
+    const artifacts = await writePassportArtifacts(passport, outputDir);
+
+    console.log(`Passport decision: ${passport.decision.toUpperCase()}`);
+    console.log(`Skill: ${passport.skillName}`);
+    console.log(`Risk score: ${passport.summary.riskScore}/100`);
+    console.log(`Decision reasons: ${passport.summary.decisionReasons}`);
+    for (const artifact of artifacts) {
+      console.log(`Wrote ${artifact}`);
+    }
+
+    if (passport.decision === "block") {
+      console.error("Passport blocked");
       process.exitCode = 1;
     }
   });

@@ -178,6 +178,35 @@ export const skillContractDecisionSchema = z.object({
   report: skillGuardReportSchema
 });
 
+export const skillPassportSchema = z.object({
+  schemaVersion: z.literal(1),
+  generatedAt: z.string().datetime(),
+  skillName: z.string().min(1),
+  decision: z.enum(["allow", "review", "block"]),
+  source: skillProvenanceSchema,
+  digests: z.object({
+    skillDigest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+    lockDigest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+    bundleDigest: z.string().regex(/^sha256:[a-f0-9]{64}$/).optional()
+  }),
+  summary: z.object({
+    riskScore: z.number().int().min(0).max(100),
+    findings: z.number().int().nonnegative(),
+    capabilityViolations: z.number().int().nonnegative(),
+    admissionReasons: z.number().int().nonnegative(),
+    trustReasons: z.number().int().nonnegative(),
+    decisionReasons: z.number().int().nonnegative()
+  }),
+  artifacts: z.array(z.string()),
+  embedded: z.object({
+    scan: skillGuardReportSchema,
+    trust: skillTrustDecisionSchema,
+    contract: skillContractDecisionSchema,
+    admission: skillAdmissionDecisionSchema,
+    lock: skillLockSchema
+  })
+});
+
 export type Severity = z.infer<typeof severitySchema>;
 export type SkillCapability = z.infer<typeof capabilitySchema>;
 export type SkillManifest = z.infer<typeof skillManifestSchema>;
@@ -197,3 +226,4 @@ export type SkillTrustPolicy = z.infer<typeof skillTrustPolicySchema>;
 export type SkillTrustDecision = z.infer<typeof skillTrustDecisionSchema>;
 export type SkillCapabilityContract = z.infer<typeof skillCapabilityContractSchema>;
 export type SkillContractDecision = z.infer<typeof skillContractDecisionSchema>;
+export type SkillPassport = z.infer<typeof skillPassportSchema>;

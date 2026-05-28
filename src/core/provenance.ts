@@ -41,7 +41,7 @@ export async function createSkillProvenance(skillDir: string, options: CreateSki
   const digestMaterial = [];
   for (const path of await listFiles(skill.root)) {
     const file = await fingerprintFile(skill.root, path);
-    if (file.path === "skillguard.provenance.json") {
+    if (file.path === "skillguard.provenance.json" || file.path === "skillguard.lock.json") {
       continue;
     }
     digestMaterial.push(`${file.path}:${file.sha256}`);

@@ -1,7 +1,7 @@
 {
   "name": "agent-skillguard",
-  "version": "0.7.0",
-  "description": "Local-first Skill Passport creation and verification, provenance firewall, capability contracts, admission controller, update firewall, scanner, packer, lockfile, and verifier for AI agent skills.",
+  "version": "0.8.0",
+  "description": "Local-first Skill Passport creation and verification, Semantic Intent Firewall, provenance firewall, capability contracts, admission controller, update firewall, scanner, packer, lockfile, and verifier for AI agent skills.",
   "type": "module",
   "bin": {
     "agent-skillguard": "dist/cli.js"
@@ -31,6 +31,7 @@
     "skill-security",
     "supply-chain",
     "prompt-injection",
+    "ai-security",
     "claude-code",
     "codex",
     "cursor",

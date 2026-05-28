@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
 import { evaluateCapabilityContracts, writeContractArtifacts } from "./core/contract.js";
 import { ensureDir, readJsonFile, writeJsonFile } from "./core/files.js";
+import { reviewSkillIntent, writeIntentArtifacts } from "./core/intent.js";
 import { createSkillLock, defaultLockPathForSkill, readSkillLock, verifySkillLock, writeSkillLock } from "./core/lockfile.js";
 import { packSkillBundle, verifySkillBundle } from "./core/pack.js";
 import { createSkillPassport, defaultPassportOutputDir, readSkillPassport, verifySkillPassport, writePassportArtifacts, writePassportVerificationArtifacts } from "./core/passport.js";
@@ -17,7 +18,7 @@ import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.7.0";
+const version = "0.8.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -58,11 +59,16 @@ program
     const root = await packageRoot();
     const examplesDir = join(root, "examples", "skills");
     const report = await scanSkillPath(examplesDir);
-    const artifacts = await writeReportArtifacts(report, process.cwd(), { sarif: options.sarif !== false });
+    const intent = await reviewSkillIntent(examplesDir, { generatedAt: report.generatedAt, report });
+    const artifacts = [
+      ...(await writeReportArtifacts(report, process.cwd(), { sarif: options.sarif !== false })),
+      ...(await writeIntentArtifacts(intent, localPaths(process.cwd()).reportsDir))
+    ];
     console.log("Demo complete");
     console.log(`Skills scanned: ${report.summary.skills}`);
     console.log(`Findings: ${report.summary.findings}`);
     console.log(`Risk score: ${report.summary.riskScore}/100`);
+    console.log(`Intent signals: ${intent.summary.signals}`);
     console.log("Artifacts:");
     for (const artifact of artifacts) {
       console.log(`- ${artifact}`);
@@ -226,6 +232,32 @@ program
       }
       process.exitCode = 1;
     }
+  });
+
+program
+  .command("intent")
+  .argument("<path>", "Skill directory or directory containing multiple SKILL.md files.")
+  .description("Run the Semantic Intent Firewall against natural-language skill instructions.")
+  .option("--fail-on <severity>", "Exit non-zero when this severity or higher is found.", parseSeverity)
+  .action(async (path: string, options: ThresholdOptions) => {
+    const review = await reviewSkillIntent(resolve(process.cwd(), path));
+    const artifacts = await writeIntentArtifacts(review, localPaths(process.cwd()).reportsDir);
+
+    console.log(`Intent decision: ${review.decision.toUpperCase()}`);
+    console.log(`Signals: ${review.summary.signals}`);
+    console.log(`Risk score: ${review.summary.riskScore}/100`);
+    for (const artifact of artifacts) {
+      console.log(`Wrote ${artifact}`);
+    }
+
+    if (review.decision === "block") {
+      console.error("Intent blocked");
+      for (const signal of review.signals) {
+        console.error(`- [${signal.severity}] ${signal.category}: ${signal.target}`);
+      }
+      process.exitCode = 1;
+    }
+    applyThreshold(review.signals, options.failOn);
   });
 
 program

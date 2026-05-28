@@ -4,6 +4,7 @@ import { ensureDir, sha256, writeJsonFile } from "./files.js";
 import { createSkillLock } from "./lockfile.js";
 import { packSkillBundle } from "./pack.js";
 import { evaluateCapabilityContracts } from "./contract.js";
+import { reviewSkillIntent } from "./intent.js";
 import { defaultSkillGuardPolicy, evaluateAdmission } from "./policy.js";
 import { createSkillProvenance, defaultSkillTrustPolicy, evaluateSkillTrust } from "./provenance.js";
 import { scanSkillPath } from "./scanner.js";
@@ -45,6 +46,7 @@ export async function createSkillPassport(skillDir: string, options: CreateSkill
   const source = await createSkillProvenance(absoluteSkillDir, provenanceOptions);
   const trust = evaluateSkillTrust(source, defaultSkillTrustPolicy());
   const contract = evaluateCapabilityContracts(scan);
+  const intent = await reviewSkillIntent(absoluteSkillDir, { generatedAt, report: scan });
   const admission = evaluateAdmission(scan, defaultSkillGuardPolicy());
   const lock = await createSkillLock(absoluteSkillDir, { generatedAt });
   const lockDigest = `sha256:${sha256(JSON.stringify(lock))}`;
@@ -65,9 +67,9 @@ export async function createSkillPassport(skillDir: string, options: CreateSkill
     artifacts.push(bundle.path);
   }
 
-  const decision = [trust.decision, contract.decision, admission.decision].includes("block")
+  const decision = [trust.decision, contract.decision, intent.decision, admission.decision].includes("block")
     ? "block"
-    : [trust.decision, contract.decision, admission.decision].includes("review")
+    : [trust.decision, contract.decision, intent.decision, admission.decision].includes("review")
       ? "review"
       : "allow";
 
@@ -88,18 +90,20 @@ export async function createSkillPassport(skillDir: string, options: CreateSkill
           bundleDigest
         },
     summary: {
-      riskScore: scan.summary.riskScore,
+      riskScore: Math.max(scan.summary.riskScore, intent.summary.riskScore),
       findings: scan.summary.findings,
+      intentSignals: intent.summary.signals,
       capabilityViolations: contract.summary.violations,
       admissionReasons: admission.reasons.length,
       trustReasons: trust.reasons.length,
-      decisionReasons: trust.reasons.length + contract.reasons.length + admission.reasons.length
+      decisionReasons: trust.reasons.length + contract.reasons.length + intent.summary.signals + admission.reasons.length
     },
     artifacts,
     embedded: {
       scan,
       trust,
       contract,
+      intent,
       admission,
       lock
     }
@@ -180,9 +184,18 @@ export async function verifySkillPassport(passport: SkillPassport, options: Veri
     }
   }
 
-  const expectedDecision = [passport.embedded.trust.decision, passport.embedded.contract.decision, passport.embedded.admission.decision].includes("block")
+  const controlDecisions = [
+    passport.embedded.trust.decision,
+    passport.embedded.contract.decision,
+    passport.embedded.admission.decision
+  ];
+  if (passport.embedded.intent !== undefined) {
+    controlDecisions.push(passport.embedded.intent.decision);
+  }
+
+  const expectedDecision = controlDecisions.includes("block")
     ? "block"
-    : [passport.embedded.trust.decision, passport.embedded.contract.decision, passport.embedded.admission.decision].includes("review")
+    : controlDecisions.includes("review")
       ? "review"
       : "allow";
   checked.decisionConsistency = expectedDecision === passport.decision;
@@ -256,6 +269,7 @@ export function renderPassportMarkdown(passport: SkillPassport): string {
     "",
     `- Risk score: ${passport.summary.riskScore}/100`,
     `- Findings: ${passport.summary.findings}`,
+    `- Intent signals: ${passport.summary.intentSignals}`,
     `- Capability violations: ${passport.summary.capabilityViolations}`,
     `- Trust reasons: ${passport.summary.trustReasons}`,
     `- Admission reasons: ${passport.summary.admissionReasons}`,
@@ -265,6 +279,7 @@ export function renderPassportMarkdown(passport: SkillPassport): string {
     "",
     `- Trust: ${passport.embedded.trust.decision.toUpperCase()}`,
     `- Contract: ${passport.embedded.contract.decision.toUpperCase()}`,
+    `- Intent: ${passport.embedded.intent?.decision.toUpperCase() ?? "NOT CHECKED"}`,
     `- Admission: ${passport.embedded.admission.decision.toUpperCase()}`,
     "",
     "## Artifacts",
@@ -309,6 +324,7 @@ export function renderPassportHtml(passport: SkillPassport): string {
     <section class="grid">
       <div class="metric"><strong>${passport.summary.riskScore}/100</strong><br>Risk score</div>
       <div class="metric"><strong>${passport.summary.findings}</strong><br>Findings</div>
+      <div class="metric"><strong>${passport.summary.intentSignals}</strong><br>Intent signals</div>
       <div class="metric"><strong>${passport.summary.capabilityViolations}</strong><br>Capability violations</div>
       <div class="metric"><strong>${passport.summary.decisionReasons}</strong><br>Decision reasons</div>
     </section>
@@ -323,6 +339,7 @@ export function renderPassportHtml(passport: SkillPassport): string {
       <ul>
         <li>Trust: ${passport.embedded.trust.decision.toUpperCase()}</li>
         <li>Contract: ${passport.embedded.contract.decision.toUpperCase()}</li>
+        <li>Intent: ${passport.embedded.intent?.decision.toUpperCase() ?? "NOT CHECKED"}</li>
         <li>Admission: ${passport.embedded.admission.decision.toUpperCase()}</li>
       </ul>
     </section>

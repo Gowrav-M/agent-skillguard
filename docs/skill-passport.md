@@ -16,6 +16,7 @@ agent-skillguard passport ./skills/code-reviewer \
 | --- | --- |
 | Provenance firewall | Verifies source host, publisher, commit pin, and skill digest. |
 | Static scan | Finds prompt injection, exfiltration, risky scripts, hidden files, binaries, and unsafe manifests. |
+| Semantic intent firewall | Finds payload-less natural-language instructions that steer the agent into unsafe behavior. |
 | Capability contract | Compares declared capabilities to observed behavior. |
 | Admission controller | Produces an allow, review, or block decision from policy. |
 | Lock generation | Captures reproducible file hashes and capabilities. |
@@ -53,9 +54,9 @@ Verification checks:
 
 | Decision | Meaning |
 | --- | --- |
-| `ALLOW` | Trust, contract, and admission controls all allow the skill. |
+| `ALLOW` | Trust, intent, contract, and admission controls all allow the skill. |
 | `REVIEW` | No blocking control fired, but one or more controls require review. |
-| `BLOCK` | Trust, contract, or admission detected a blocking violation. |
+| `BLOCK` | Trust, intent, contract, or admission detected a blocking violation. |
 
 ## Why This Matters
 

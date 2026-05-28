@@ -11,6 +11,7 @@ npx agent-skillguard passport ./skills/code-reviewer \
 npx agent-skillguard verify-passport .skillguard/passports/code-reviewer/passport.json --skill-dir ./skills/code-reviewer
 
 npx agent-skillguard demo
+npx agent-skillguard intent ./skills
 npx agent-skillguard trust ./skills/code-reviewer --source https://github.com/org/repo/tree/main/skills/code-reviewer --commit <sha>
 npx agent-skillguard contract ./skills
 npx agent-skillguard admit ./skills
@@ -28,7 +29,8 @@ Skills for Codex, Claude Code, Cursor, OpenCode, MCP workflows, and internal age
 
 `agent-skillguard` is not another skill list and not another agent framework. It is a local-first admission controller for agent skills:
 
-- Creates a shareable Skill Passport that combines provenance, scan, contract, admission, lock, and optional bundle evidence.
+- Creates a shareable Skill Passport that combines provenance, scan, semantic intent review, contract, admission, lock, and optional bundle evidence.
+- Runs a Semantic Intent Firewall for payload-less natural-language risks such as compliance-framed secret collection, approval bypass, and skill selection hijacking.
 - Blocks unpinned, mutable, or unapproved skill sources with a provenance firewall.
 - Enforces least-privilege capability contracts from `SKILL.md` declarations.
 - Finds hidden prompt injection and policy override text in Markdown, YAML, HTML comments, and code blocks.
@@ -54,6 +56,8 @@ The demo scans bundled safe and malicious fixtures and writes:
 .skillguard/reports/skillguard-report.md
 .skillguard/reports/skillguard-report.html
 .skillguard/reports/skillguard-report.sarif
+.skillguard/reports/skillguard-intent.json
+.skillguard/reports/skillguard-intent.md
 ```
 
 ## Report Preview
@@ -81,6 +85,7 @@ agent-skillguard init
 agent-skillguard demo
 agent-skillguard passport <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--pack]
 agent-skillguard verify-passport <passport-json> [--skill-dir <path>] [--bundle <path>]
+agent-skillguard intent <path> [--fail-on high]
 agent-skillguard policy
 agent-skillguard trust <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--write]
 agent-skillguard contract <path>
@@ -103,6 +108,7 @@ agent-skillguard doctor
 - A package manifest uses install hooks to run code during setup.
 - A skill changes after review, but the lockfile catches the hash drift.
 - A skill source points to a mutable GitHub branch instead of an immutable commit.
+- A skill has no malware payload but instructs the agent to collect credentials as "compliance evidence" and treat the action as pre-approved.
 
 ## Skill Passport
 
@@ -116,7 +122,7 @@ agent-skillguard passport ./skills/code-reviewer \
   --pack
 ```
 
-It runs provenance, scan, capability contract, admission, lock generation, and optional deterministic packaging in one command.
+It runs provenance, scan, semantic intent review, capability contract, admission, lock generation, and optional deterministic packaging in one command.
 
 Passport outputs:
 
@@ -139,6 +145,30 @@ agent-skillguard verify-passport .skillguard/passports/code-reviewer/passport.js
 ```
 
 Verification checks passport schema, lock digest, optional current skill digest, optional bundle digest, and embedded decision consistency.
+
+## Semantic Intent Firewall
+
+Modern malicious skills do not always need obvious scripts or `ignore previous instructions` strings. A skill can look like ordinary Markdown while pushing the agent toward unsafe behavior at runtime.
+
+```bash
+agent-skillguard intent ./skills --fail-on high
+```
+
+Intent review flags natural-language behavior risks:
+
+- compliance or audit language used to justify collecting secrets
+- approval bypass such as "pre-approved" or "do not ask"
+- broad "use this skill for every task" selection hijacking
+- claims that the skill overrides system, developer, user, or policy instructions
+- remote instruction loading from URLs
+- persistent memory, profile, startup, or background behavior
+
+It writes:
+
+```text
+.skillguard/reports/skillguard-intent.json
+.skillguard/reports/skillguard-intent.md
+```
 
 ## Provenance Firewall
 

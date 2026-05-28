@@ -48,6 +48,14 @@ Block skills that use power they did not declare:
 - run: npx agent-skillguard contract ./skills
 ```
 
+## Semantic Intent Gate
+
+Block payload-less natural-language risks before they become runtime agent behavior:
+
+```yaml
+- run: npx agent-skillguard intent ./skills --fail-on high
+```
+
 For early rollout, use `agent-skillguard admit ./skills --sarif` without `--require-lock`. Once the team has approved skill locks, enable `--require-lock` so unreviewed skill drift fails pull requests.
 
 ## Update Review

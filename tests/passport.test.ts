@@ -20,7 +20,9 @@ describe("skill passport", () => {
     expect(passport.embedded.scan.summary.riskScore).toBe(0);
     expect(passport.embedded.trust.decision).toBe("allow");
     expect(passport.embedded.contract.decision).toBe("allow");
+    expect(passport.embedded.intent?.decision).toBe("allow");
     expect(passport.embedded.admission.decision).toBe("allow");
+    expect(passport.summary.intentSignals).toBe(0);
     expect(passport.digests.skillDigest).toMatch(/^sha256:[a-f0-9]{64}$/);
     expect(passport.digests.lockDigest).toMatch(/^sha256:[a-f0-9]{64}$/);
   });
@@ -45,6 +47,20 @@ describe("skill passport", () => {
     expect(passport.decision).toBe("block");
     expect(passport.embedded.contract.decision).toBe("block");
     expect(passport.summary.capabilityViolations).toBeGreaterThan(0);
+  });
+
+  it("blocks a passport for payload-less malicious intent", async () => {
+    const passport = await createSkillPassport("examples/skills/payloadless-compliance-hijack", {
+      sourceUri: "https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/payloadless-compliance-hijack",
+      sourceCommit: commit,
+      publisher: "Gowrav-M"
+    });
+
+    expect(passport.decision).toBe("block");
+    expect(passport.embedded.intent?.decision).toBe("block");
+    expect(passport.summary.intentSignals).toBeGreaterThan(0);
+    expect(passport.summary.riskScore).toBe(100);
+    expect(passport.summary.decisionReasons).toBeGreaterThan(0);
   });
 
   it("renders and writes passport artifacts including optional bundle", async () => {

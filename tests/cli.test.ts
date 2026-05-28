@@ -42,6 +42,13 @@ describe("CLI", () => {
     expect(result.stderr).toContain("Contract blocked");
   });
 
+  it("intent blocks payload-less semantic hijacking", async () => {
+    const result = await execaNode(["src/cli.ts", "intent", "examples/skills/payloadless-compliance-hijack", "--fail-on", "high"], process.cwd());
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain("Intent decision: BLOCK");
+    expect(result.stderr).toContain("Intent blocked");
+  });
+
   it("passport allows safe pinned skills", async () => {
     const result = await execaNode([
       "src/cli.ts",

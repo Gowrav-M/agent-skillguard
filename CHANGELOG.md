@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0
+
+- Added Semantic Intent Firewall with `intent`.
+- Detects payload-less natural-language risks such as compliance-framed secret collection, approval bypass, skill selection hijacking, priority inversion, remote instruction loading, and persistence requests.
+- Embedded intent review into Skill Passport decisions and artifacts.
+- Added a payload-less malicious fixture and tests.
+
 ## 0.7.0
 
 - Added Skill Passport verification with `verify-passport`.

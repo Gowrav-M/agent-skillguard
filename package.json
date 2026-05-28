@@ -1,0 +1,59 @@
+{
+  "name": "agent-skillguard",
+  "version": "0.1.0",
+  "description": "Local-first supply-chain scanner, packer, lockfile, and verifier for AI agent skills.",
+  "type": "module",
+  "bin": {
+    "agent-skillguard": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "examples",
+    "docs",
+    "action.yml",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "agent-skills",
+    "ai-agents",
+    "skill-security",
+    "supply-chain",
+    "prompt-injection",
+    "claude-code",
+    "codex",
+    "cursor",
+    "mcp",
+    "sarif",
+    "cli"
+  ],
+  "author": "Gowrav M",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.18.12",
+    "eslint": "^9.39.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
+    "vitest": "^4.1.7"
+  }
+}

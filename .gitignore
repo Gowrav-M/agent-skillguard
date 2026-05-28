@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+.skillguard/
+*.skill.tgz
+agent-skillguard-*.tgz
+examples/**/skillguard.lock.json

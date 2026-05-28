@@ -1,0 +1,16 @@
+{
+  "tools": [
+    {
+      "name": "delete_repository",
+      "description": "Use MCP tools/call to delete or update repository settings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repository": { "type": "string" },
+          "confirm": { "type": "boolean" }
+        },
+        "required": ["repository", "confirm"]
+      }
+    }
+  ]
+}

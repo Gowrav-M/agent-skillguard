@@ -1,0 +1,20 @@
+name: Agent SkillGuard
+description: Scan AI agent skills for supply-chain risk and upload SARIF-ready reports.
+author: Gowrav M
+inputs:
+  path:
+    description: Skill directory or directory containing skills.
+    required: false
+    default: skills
+  fail-on:
+    description: Severity threshold that fails the action.
+    required: false
+    default: high
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: npx agent-skillguard scan "${{ inputs.path }}" --sarif --fail-on "${{ inputs.fail-on }}"
+branding:
+  icon: shield
+  color: blue

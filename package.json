@@ -1,8 +1,16 @@
 {
   "name": "agent-skillguard",
   "version": "1.0.0",
-  "description": "Local-first SkillSet Attack Graph, Skill Passport, Semantic Intent Firewall, risk baselines, provenance firewall, scanner, packer, lockfile, and verifier for AI agent skills.",
+  "description": "Policy-as-code admission controller for AI agent skills and MCP tools with SkillBOM, lockfiles, and supply-chain baselines.",
   "type": "module",
+  "homepage": "https://github.com/Gowrav-M/agent-skillguard#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gowrav-M/agent-skillguard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Gowrav-M/agent-skillguard/issues"
+  },
   "bin": {
     "agent-skillguard": "dist/cli.js"
   },
@@ -30,8 +38,15 @@
     "ai-agents",
     "skill-security",
     "supply-chain",
+    "software-supply-chain",
     "prompt-injection",
     "ai-security",
+    "ai-agents-security",
+    "llm-security",
+    "policy-as-code",
+    "governance",
+    "skill-registry",
+    "devsecops",
     "claude-code",
     "codex",
     "cursor",

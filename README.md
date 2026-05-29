@@ -1,15 +1,37 @@
 # Agent SkillGuard
 
-Agent skills are executable supply chain. `agent-skillguard` creates a local-first Skill Passport: a portable approval record showing where a skill came from, what it can do, why it was allowed or blocked, and what exact digest was reviewed.
+[![CI](https://github.com/Gowrav-M/agent-skillguard/actions/workflows/ci.yml/badge.svg)](https://github.com/Gowrav-M/agent-skillguard/actions/workflows/ci.yml)
+[![Node 22+](https://img.shields.io/badge/node-%3E%3D22-339933)](package.json)
+[![License MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Local first](https://img.shields.io/badge/local--first-no%20cloud%20required-111827)](#quickstart)
+[![SkillBOM](https://img.shields.io/badge/SkillBOM-admission%20evidence-orange)](#skill-passport)
+
+Policy-as-code admission controller for AI agent skills and MCP tools.
+
+Agent skills are executable supply chain. `agent-skillguard` creates portable approval evidence: SkillBOM, lockfiles, provenance checks, semantic intent review, SkillSet Attack Graphs, and Skill Passports that show what was reviewed and why it was allowed or blocked.
+
+![Agent SkillGuard terminal demo](docs/assets/terminal-demo.svg)
+
+## Quickstart
 
 ```bash
+# 1. Run the bundled supply-chain demo
+npx agent-skillguard demo
+
+# 2. Detect unsafe skill combinations
+npx agent-skillguard graph ./skills
+
+# 3. Create an enterprise approval record
 npx agent-skillguard passport ./skills/code-reviewer \
   --source https://github.com/org/repo/tree/main/skills/code-reviewer \
   --commit <sha> \
   --publisher org \
   --pack
-npx agent-skillguard verify-passport .skillguard/passports/code-reviewer/passport.json --skill-dir ./skills/code-reviewer
+```
 
+Power-user commands remain available:
+
+```bash
 npx agent-skillguard demo
 npx agent-skillguard graph ./skills
 npx agent-skillguard intent ./skills
@@ -23,8 +45,6 @@ npx agent-skillguard scan ./skills
 npx agent-skillguard pack ./skills/code-reviewer
 npx agent-skillguard verify ./code-reviewer.skill.tgz
 ```
-
-![Agent SkillGuard terminal demo](docs/assets/terminal-demo.svg)
 
 ## Why This Exists
 
@@ -49,6 +69,16 @@ SkillGuard finds unsafe skill combinations, not just unsafe individual skills.
 - Writes `skillguard.lock.json` with reproducible file hashes and declared capabilities.
 - Packs deterministic `.skill.tgz` bundles with embedded locks.
 - Emits Markdown, HTML, JSON, and SARIF for local review and GitHub code scanning.
+
+## AgentSec Trilogy
+
+Use SkillGuard as the admission-control layer in a broader local-first AgentSec pipeline:
+
+```text
+agent-cognicheck      test/red-team MCP tools and skills before approval
+agent-skillguard      approve, lock, passport, baseline, and package skills
+agentops-watchtower   monitor runtime behavior and preserve incident evidence
+```
 
 ## One-Command Demo
 

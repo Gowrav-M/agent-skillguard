@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { analyzeSkillAttackGraph } from "./attackGraph.js";
 import { ensureDir, readJsonFile, writeJsonFile } from "./files.js";
 import { reviewSkillIntent } from "./intent.js";
 import { riskScore } from "./risk.js";
@@ -8,6 +9,7 @@ import {
   skillRiskBaselineSchema,
   skillRiskTriageSchema,
   type SkillFinding,
+  type SkillAttackGraphPath,
   type SkillRiskBaseline,
   type SkillRiskBaselineEntry,
   type SkillRiskTriage
@@ -27,10 +29,12 @@ export async function createRiskBaseline(inputPath: string, options: CreateRiskB
   const generatedAt = options.generatedAt ?? new Date().toISOString();
   const report = await scanSkillPath(inputPath, { generatedAt });
   const intent = await reviewSkillIntent(inputPath, { generatedAt, report });
+  const graph = await analyzeSkillAttackGraph(inputPath, { generatedAt, report, intent });
   const acceptedAt = generatedAt;
   const entries = [
     ...report.findings.map((finding) => baselineEntry("scan", finding, acceptedAt, options)),
-    ...intent.signals.map((signal) => baselineEntry("intent", signal, acceptedAt, options))
+    ...intent.signals.map((signal) => baselineEntry("intent", signal, acceptedAt, options)),
+    ...graph.paths.map((path) => baselineEntry("graph", path, acceptedAt, options))
   ];
 
   return skillRiskBaselineSchema.parse({
@@ -46,6 +50,7 @@ export async function triageSkillRisk(inputPath: string, baseline: SkillRiskBase
   const generatedAt = options.generatedAt ?? new Date().toISOString();
   const report = await scanSkillPath(inputPath, { generatedAt });
   const intent = await reviewSkillIntent(inputPath, { generatedAt, report });
+  const graph = await analyzeSkillAttackGraph(inputPath, { generatedAt, report, intent });
   const acceptedIds = new Set(
     baseline.accepted
       .filter((entry) => isEntryActive(entry, generatedAt))
@@ -53,7 +58,8 @@ export async function triageSkillRisk(inputPath: string, baseline: SkillRiskBase
   );
   const unresolvedFindings = report.findings.filter((finding) => !acceptedIds.has(`scan:${finding.id}`));
   const unresolvedIntentSignals = intent.signals.filter((signal) => !acceptedIds.has(`intent:${signal.id}`));
-  const unresolved = [...unresolvedFindings, ...unresolvedIntentSignals];
+  const unresolvedGraphPaths = graph.paths.filter((path) => !acceptedIds.has(`graph:${path.id}`));
+  const unresolved = [...unresolvedFindings, ...unresolvedIntentSignals, ...unresolvedGraphPaths];
   const decision = unresolved.some((finding) => finding.severity === "critical")
     ? "block"
     : unresolved.length > 0
@@ -68,13 +74,16 @@ export async function triageSkillRisk(inputPath: string, baseline: SkillRiskBase
       unresolved: unresolved.length,
       unresolvedFindings: unresolvedFindings.length,
       unresolvedIntentSignals: unresolvedIntentSignals.length,
+      unresolvedGraphPaths: unresolvedGraphPaths.length,
       riskScore: riskScore(unresolved)
     },
     baseline,
     report,
     intent,
+    graph,
     unresolvedFindings,
-    unresolvedIntentSignals
+    unresolvedIntentSignals,
+    unresolvedGraphPaths
   });
 }
 
@@ -127,6 +136,7 @@ export function renderRiskTriageMarkdown(triage: SkillRiskTriage): string {
     `- Unresolved risks: ${triage.summary.unresolved}`,
     `- Unresolved scan findings: ${triage.summary.unresolvedFindings}`,
     `- Unresolved intent signals: ${triage.summary.unresolvedIntentSignals}`,
+    `- Unresolved graph paths: ${triage.summary.unresolvedGraphPaths}`,
     `- Risk score: ${triage.summary.riskScore}/100`,
     "",
     "## Unresolved Scan Findings",
@@ -136,10 +146,12 @@ export function renderRiskTriageMarkdown(triage: SkillRiskTriage): string {
   appendFindings(lines, triage.unresolvedFindings);
   lines.push("", "## Unresolved Intent Signals", "");
   appendFindings(lines, triage.unresolvedIntentSignals);
+  lines.push("", "## Unresolved Attack Graph Paths", "");
+  appendGraphPaths(lines, triage.unresolvedGraphPaths);
   return `${lines.join("\n").trim()}\n`;
 }
 
-function baselineEntry(source: "scan" | "intent", finding: SkillFinding, acceptedAt: string, options: CreateRiskBaselineOptions): SkillRiskBaselineEntry {
+function baselineEntry(source: "scan" | "intent" | "graph", finding: SkillFinding | SkillAttackGraphPath, acceptedAt: string, options: CreateRiskBaselineOptions): SkillRiskBaselineEntry {
   const entry: SkillRiskBaselineEntry = {
     id: finding.id,
     source,
@@ -178,5 +190,16 @@ function appendFindings(lines: string[], findings: SkillFinding[]): void {
 
   for (const finding of findings) {
     lines.push(`- [${finding.severity.toUpperCase()}] ${finding.category} at \`${finding.target}\`: ${finding.title}`);
+  }
+}
+
+function appendGraphPaths(lines: string[], paths: SkillAttackGraphPath[]): void {
+  if (paths.length === 0) {
+    lines.push("No unresolved graph paths.");
+    return;
+  }
+
+  for (const path of paths) {
+    lines.push(`- [${path.severity.toUpperCase()}] ${path.category} across \`${path.skillNames.join(" -> ")}\`: ${path.title}`);
   }
 }

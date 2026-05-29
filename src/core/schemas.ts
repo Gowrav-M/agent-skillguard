@@ -240,7 +240,7 @@ export const skillPassportVerificationSchema = z.object({
 
 export const skillRiskBaselineEntrySchema = z.object({
   id: z.string().min(1),
-  source: z.enum(["scan", "intent"]),
+  source: z.enum(["scan", "intent", "graph"]),
   severity: severitySchema,
   category: z.string().min(1),
   target: z.string().min(1),
@@ -248,6 +248,48 @@ export const skillRiskBaselineEntrySchema = z.object({
   acceptedAt: z.string().datetime(),
   reason: z.string().min(1),
   expiresAt: z.string().optional()
+});
+
+export const skillAttackGraphNodeSchema = z.object({
+  id: z.string().min(1),
+  skillName: z.string().min(1),
+  root: z.string().min(1),
+  roles: z.array(z.enum(["source", "transform", "sink", "amplifier"])),
+  capabilities: z.array(capabilitySchema),
+  signals: z.array(z.string()).default([])
+});
+
+export const skillAttackGraphEdgeSchema = z.object({
+  id: z.string().min(1),
+  from: z.string().min(1),
+  to: z.string().min(1),
+  kind: z.string().min(1),
+  description: z.string().min(1)
+});
+
+export const skillAttackGraphPathSchema = skillFindingSchema.extend({
+  skillNames: z.array(z.string().min(1)),
+  nodeIds: z.array(z.string().min(1)),
+  edgeIds: z.array(z.string().min(1))
+});
+
+export const skillAttackGraphSchema = z.object({
+  generatedAt: z.string().datetime(),
+  decision: z.enum(["allow", "review", "block"]),
+  summary: z.object({
+    skills: z.number().int().nonnegative(),
+    nodes: z.number().int().nonnegative(),
+    edges: z.number().int().nonnegative(),
+    paths: z.number().int().nonnegative(),
+    criticalPaths: z.number().int().nonnegative(),
+    highPaths: z.number().int().nonnegative(),
+    riskScore: z.number().int().min(0).max(100)
+  }),
+  report: skillGuardReportSchema,
+  intent: skillIntentReviewSchema,
+  nodes: z.array(skillAttackGraphNodeSchema),
+  edges: z.array(skillAttackGraphEdgeSchema),
+  paths: z.array(skillAttackGraphPathSchema)
 });
 
 export const skillRiskBaselineSchema = z.object({
@@ -266,13 +308,16 @@ export const skillRiskTriageSchema = z.object({
     unresolved: z.number().int().nonnegative(),
     unresolvedFindings: z.number().int().nonnegative(),
     unresolvedIntentSignals: z.number().int().nonnegative(),
+    unresolvedGraphPaths: z.number().int().nonnegative(),
     riskScore: z.number().int().min(0).max(100)
   }),
   baseline: skillRiskBaselineSchema,
   report: skillGuardReportSchema,
   intent: skillIntentReviewSchema,
+  graph: skillAttackGraphSchema,
   unresolvedFindings: z.array(skillFindingSchema),
-  unresolvedIntentSignals: z.array(skillFindingSchema)
+  unresolvedIntentSignals: z.array(skillFindingSchema),
+  unresolvedGraphPaths: z.array(skillAttackGraphPathSchema)
 });
 
 export type Severity = z.infer<typeof severitySchema>;
@@ -300,3 +345,7 @@ export type SkillPassportVerification = z.infer<typeof skillPassportVerification
 export type SkillRiskBaselineEntry = z.infer<typeof skillRiskBaselineEntrySchema>;
 export type SkillRiskBaseline = z.infer<typeof skillRiskBaselineSchema>;
 export type SkillRiskTriage = z.infer<typeof skillRiskTriageSchema>;
+export type SkillAttackGraphNode = z.infer<typeof skillAttackGraphNodeSchema>;
+export type SkillAttackGraphEdge = z.infer<typeof skillAttackGraphEdgeSchema>;
+export type SkillAttackGraphPath = z.infer<typeof skillAttackGraphPathSchema>;
+export type SkillAttackGraph = z.infer<typeof skillAttackGraphSchema>;

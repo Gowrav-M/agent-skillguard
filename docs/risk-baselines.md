@@ -17,7 +17,7 @@ Outputs:
 .skillguard/reports/skillguard-baseline.md
 ```
 
-The baseline stores scan findings and semantic intent signals by stable IDs, severity, category, target, title, acceptance reason, and optional expiry.
+The baseline stores scan findings, semantic intent signals, and attack graph paths by stable IDs, severity, category, target, title, acceptance reason, and optional expiry.
 
 ## Triage Against A Baseline
 
@@ -46,4 +46,4 @@ Expired baseline entries no longer suppress matching findings. Use this for temp
 
 ## Why This Matters
 
-Real-world validation found that useful public skill repositories often contain review-worthy capability chains or natural-language intent signals. A baseline lets enterprises adopt SkillGuard without pretending every existing finding is immediately fixable, while still preventing silent risk drift.
+Real-world validation found that useful public skill repositories often contain review-worthy capability chains, natural-language intent signals, or cross-skill composition risk. A baseline lets enterprises adopt SkillGuard without pretending every existing finding is immediately fixable, while still preventing silent risk drift.

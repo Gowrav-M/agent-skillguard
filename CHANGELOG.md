@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0
+
+- Added SkillSet Attack Graph with `graph`.
+- Detects cross-skill composition risks such as secret source to external sink, repo read to git write, browser automation to external sink, approval bypass to high-power tools, selection hijack to high-power tools, and MCP mutation to broad capability chains.
+- Emits attack graph JSON, Markdown, and HTML reports.
+- Integrates graph paths with risk baselines and triage.
+- Demo now writes attack graph artifacts.
+
 ## 0.9.0
 
 - Added auditable risk baselines with `baseline`.

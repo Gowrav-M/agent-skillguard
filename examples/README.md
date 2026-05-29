@@ -16,6 +16,7 @@ Try:
 ```bash
 npx agent-skillguard passport examples/skills/safe-code-reviewer --source https://github.com/Gowrav-M/agent-skillguard/tree/main/examples/skills/safe-code-reviewer --commit 0123456789abcdef0123456789abcdef01234567 --publisher Gowrav-M --pack
 npx agent-skillguard verify-passport .skillguard/passports/safe-code-reviewer/passport.json --skill-dir examples/skills/safe-code-reviewer --bundle .skillguard/passports/safe-code-reviewer/safe-code-reviewer.skill.tgz
+npx agent-skillguard graph examples/skillsets/cross-skill-exfiltration --fail-on high
 npx agent-skillguard intent examples/skills/payloadless-compliance-hijack --fail-on high
 npx agent-skillguard baseline examples/skills --reason "reviewed example fixtures"
 npx agent-skillguard triage examples/skills --baseline .skillguard/baseline.json --fail-on high

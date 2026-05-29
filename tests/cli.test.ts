@@ -74,6 +74,22 @@ describe("CLI", () => {
     expect(triage.stdout).toContain("Triage decision: ALLOW");
   });
 
+  it("graph writes attack graph artifacts and fails on high risk", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "skillguard-graph-cli-"));
+    const result = await execaNode([
+      "src/cli.ts",
+      "graph",
+      join(process.cwd(), "examples/skillsets/cross-skill-exfiltration"),
+      "--fail-on",
+      "high"
+    ], cwd);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain("Attack graph decision: BLOCK");
+    expect(result.stdout).toContain("skillguard-attack-graph.json");
+    expect(result.stderr).toContain("Attack graph blocked");
+  });
+
   it("passport allows safe pinned skills", async () => {
     const result = await execaNode([
       "src/cli.ts",

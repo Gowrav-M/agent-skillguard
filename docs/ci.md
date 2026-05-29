@@ -56,6 +56,14 @@ Block payload-less natural-language risks before they become runtime agent behav
 - run: npx agent-skillguard intent ./skills --fail-on high
 ```
 
+## SkillSet Attack Graph Gate
+
+Block unsafe skill combinations, not only unsafe individual skills:
+
+```yaml
+- run: npx agent-skillguard graph ./skills --fail-on high
+```
+
 ## Baseline Triage Gate
 
 For existing skill repositories, create a reviewed baseline once, then fail pull requests only on new or expired risk:

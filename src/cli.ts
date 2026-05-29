@@ -4,6 +4,7 @@ import { constants } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
+import { analyzeSkillAttackGraph, writeAttackGraphArtifacts } from "./core/attackGraph.js";
 import { createRiskBaseline, readRiskBaseline, renderRiskBaselineMarkdown, triageSkillRisk, writeRiskBaseline, writeRiskTriageArtifacts } from "./core/baseline.js";
 import { evaluateCapabilityContracts, writeContractArtifacts } from "./core/contract.js";
 import { ensureDir, readJsonFile, writeJsonFile } from "./core/files.js";
@@ -19,7 +20,7 @@ import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.9.0";
+const version = "1.0.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -61,15 +62,18 @@ program
     const examplesDir = join(root, "examples", "skills");
     const report = await scanSkillPath(examplesDir);
     const intent = await reviewSkillIntent(examplesDir, { generatedAt: report.generatedAt, report });
+    const graph = await analyzeSkillAttackGraph(examplesDir, { generatedAt: report.generatedAt, report, intent });
     const artifacts = [
       ...(await writeReportArtifacts(report, process.cwd(), { sarif: options.sarif !== false })),
-      ...(await writeIntentArtifacts(intent, localPaths(process.cwd()).reportsDir))
+      ...(await writeIntentArtifacts(intent, localPaths(process.cwd()).reportsDir)),
+      ...(await writeAttackGraphArtifacts(graph, localPaths(process.cwd()).reportsDir))
     ];
     console.log("Demo complete");
     console.log(`Skills scanned: ${report.summary.skills}`);
     console.log(`Findings: ${report.summary.findings}`);
     console.log(`Risk score: ${report.summary.riskScore}/100`);
     console.log(`Intent signals: ${intent.summary.signals}`);
+    console.log(`Attack graph paths: ${graph.summary.paths}`);
     console.log("Artifacts:");
     for (const artifact of artifacts) {
       console.log(`- ${artifact}`);
@@ -259,6 +263,39 @@ program
       process.exitCode = 1;
     }
     applyThreshold(review.signals, options.failOn);
+  });
+
+program
+  .command("graph")
+  .argument("<path>", "Skill directory or directory containing multiple SKILL.md files.")
+  .description("Build a SkillSet Attack Graph for cross-skill composition risk.")
+  .option("--baseline <path>", "Optional risk baseline. When present, fail-on applies only to unresolved graph paths.")
+  .option("--fail-on <severity>", "Exit non-zero when this severity or higher is found.", parseSeverity)
+  .action(async (path: string, options: { baseline?: string; failOn?: Severity }) => {
+    const paths = localPaths(process.cwd());
+    const target = resolve(process.cwd(), path);
+    const graph = await analyzeSkillAttackGraph(target);
+    const artifacts = await writeAttackGraphArtifacts(graph, paths.reportsDir);
+    const thresholdPaths = options.baseline === undefined
+      ? graph.paths
+      : (await triageSkillRisk(target, await readRiskBaseline(resolve(process.cwd(), options.baseline)), { generatedAt: graph.generatedAt })).unresolvedGraphPaths;
+
+    console.log(`Attack graph decision: ${graph.decision.toUpperCase()}`);
+    console.log(`Skills: ${graph.summary.skills}`);
+    console.log(`Risk paths: ${graph.summary.paths}`);
+    console.log(`Unresolved graph paths: ${thresholdPaths.length}`);
+    console.log(`Risk score: ${graph.summary.riskScore}/100`);
+    for (const artifact of artifacts) {
+      console.log(`Wrote ${artifact}`);
+    }
+
+    if (meetsThreshold(thresholdPaths, options.failOn)) {
+      console.error("Attack graph blocked");
+      for (const pathFinding of thresholdPaths) {
+        console.error(`- [${pathFinding.severity}] ${pathFinding.category}: ${pathFinding.target}`);
+      }
+    }
+    applyThreshold(thresholdPaths, options.failOn);
   });
 
 program

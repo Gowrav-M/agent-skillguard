@@ -11,6 +11,7 @@ npx agent-skillguard passport ./skills/code-reviewer \
 npx agent-skillguard verify-passport .skillguard/passports/code-reviewer/passport.json --skill-dir ./skills/code-reviewer
 
 npx agent-skillguard demo
+npx agent-skillguard graph ./skills
 npx agent-skillguard intent ./skills
 npx agent-skillguard baseline ./skills --reason "initial reviewed risk"
 npx agent-skillguard triage ./skills --baseline .skillguard/baseline.json --fail-on high
@@ -29,8 +30,11 @@ npx agent-skillguard verify ./code-reviewer.skill.tgz
 
 Skills for Codex, Claude Code, Cursor, OpenCode, MCP workflows, and internal agents often look like Markdown prompts, but they can include scripts, install hooks, tool descriptors, hidden instructions, and broad permissions. That makes them a new package-management problem.
 
+SkillGuard finds unsafe skill combinations, not just unsafe individual skills.
+
 `agent-skillguard` is not another skill list and not another agent framework. It is a local-first admission controller for agent skills:
 
+- Builds a SkillSet Attack Graph that detects cross-skill composition risk.
 - Creates a shareable Skill Passport that combines provenance, scan, semantic intent review, contract, admission, lock, and optional bundle evidence.
 - Runs a Semantic Intent Firewall for payload-less natural-language risks such as compliance-framed secret collection, approval bypass, and skill selection hijacking.
 - Creates auditable risk baselines so teams can accept reviewed existing risk and fail CI only on new or expired risk.
@@ -61,6 +65,9 @@ The demo scans bundled safe and malicious fixtures and writes:
 .skillguard/reports/skillguard-report.sarif
 .skillguard/reports/skillguard-intent.json
 .skillguard/reports/skillguard-intent.md
+.skillguard/reports/skillguard-attack-graph.json
+.skillguard/reports/skillguard-attack-graph.md
+.skillguard/reports/skillguard-attack-graph.html
 ```
 
 ## Report Preview
@@ -88,6 +95,7 @@ agent-skillguard init
 agent-skillguard demo
 agent-skillguard passport <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--pack]
 agent-skillguard verify-passport <passport-json> [--skill-dir <path>] [--bundle <path>]
+agent-skillguard graph <path> [--baseline <path>] [--fail-on high]
 agent-skillguard intent <path> [--fail-on high]
 agent-skillguard baseline <path> --reason <text> [--expires <date>]
 agent-skillguard triage <path> --baseline <path> [--fail-on high]
@@ -150,6 +158,40 @@ agent-skillguard verify-passport .skillguard/passports/code-reviewer/passport.js
 ```
 
 Verification checks passport schema, lock digest, optional current skill digest, optional bundle digest, and embedded decision consistency.
+
+## SkillSet Attack Graph
+
+Individual skills can look acceptable while a set of installed skills creates a dangerous chain.
+
+```bash
+agent-skillguard graph ./skills --fail-on high
+```
+
+```mermaid
+flowchart LR
+  A["env-reader skill"] --> B["summarizer skill"]
+  B --> C["webhook-publisher skill"]
+  C --> D["Critical: secret source to external sink"]
+```
+
+Graph review flags cross-skill paths such as:
+
+- secret access to network publishing
+- filesystem read to external sink
+- repository read to git write
+- browser automation to external sink
+- approval bypass or selection hijack amplifying high-power tools
+- MCP tool mutation combined with broad capability chains
+
+It writes:
+
+```text
+.skillguard/reports/skillguard-attack-graph.json
+.skillguard/reports/skillguard-attack-graph.md
+.skillguard/reports/skillguard-attack-graph.html
+```
+
+See [docs/skillset-attack-graph.md](docs/skillset-attack-graph.md).
 
 ## Semantic Intent Firewall
 

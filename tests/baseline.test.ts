@@ -18,6 +18,18 @@ describe("risk baseline", () => {
     expect(renderRiskTriageMarkdown(triage)).toContain("Risk Triage");
   });
 
+  it("accepts existing attack graph risk for future triage", async () => {
+    const baseline = await createRiskBaseline("examples/skillsets/cross-skill-exfiltration", {
+      reason: "reviewed graph risk"
+    });
+
+    const triage = await triageSkillRisk("examples/skillsets/cross-skill-exfiltration", baseline);
+
+    expect(baseline.accepted.some((entry) => entry.source === "graph")).toBe(true);
+    expect(triage.decision).toBe("allow");
+    expect(triage.summary.unresolvedGraphPaths).toBe(0);
+  });
+
   it("surfaces risk that is not in the accepted baseline", async () => {
     const baseline = await createRiskBaseline("examples/skills/safe-code-reviewer", {
       reason: "safe baseline"
@@ -28,6 +40,18 @@ describe("risk baseline", () => {
     expect(triage.decision).toBe("block");
     expect(triage.summary.unresolved).toBeGreaterThan(0);
     expect(triage.unresolvedIntentSignals.some((signal) => signal.category === "intent.compliance_secret_collection")).toBe(true);
+  });
+
+  it("surfaces attack graph risk that is not in the accepted baseline", async () => {
+    const baseline = await createRiskBaseline("examples/skills/safe-code-reviewer", {
+      reason: "safe baseline"
+    });
+
+    const triage = await triageSkillRisk("examples/skillsets/cross-skill-exfiltration", baseline);
+
+    expect(triage.decision).toBe("block");
+    expect(triage.summary.unresolvedGraphPaths).toBeGreaterThan(0);
+    expect(triage.unresolvedGraphPaths.some((path) => path.category === "graph.secret_to_external_sink")).toBe(true);
   });
 
   it("does not accept expired baseline entries", async () => {

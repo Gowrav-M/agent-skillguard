@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0
+
+- Added auditable risk baselines with `baseline`.
+- Added `triage` to compare current scan and intent results against accepted risk.
+- Supports expiry-aware accepted entries so temporary exceptions stop suppressing findings after their review window.
+- Added baseline and triage JSON/Markdown reports for CI adoption.
+
 ## 0.8.1
 
 - Added real-world validation notes for 186 public `SKILL.md` files across official, community, and adversarial skill repositories.

@@ -4,6 +4,7 @@ import { constants } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
+import { createRiskBaseline, readRiskBaseline, renderRiskBaselineMarkdown, triageSkillRisk, writeRiskBaseline, writeRiskTriageArtifacts } from "./core/baseline.js";
 import { evaluateCapabilityContracts, writeContractArtifacts } from "./core/contract.js";
 import { ensureDir, readJsonFile, writeJsonFile } from "./core/files.js";
 import { reviewSkillIntent, writeIntentArtifacts } from "./core/intent.js";
@@ -18,7 +19,7 @@ import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "0.8.1";
+const version = "0.9.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -261,6 +262,60 @@ program
   });
 
 program
+  .command("baseline")
+  .argument("<path>", "Skill directory or directory containing multiple SKILL.md files.")
+  .requiredOption("--reason <text>", "Reason this current risk set is accepted.")
+  .option("--expires <date>", "Optional expiration date for accepted entries.")
+  .option("-o, --output <path>", "Baseline output path. Defaults to .skillguard/baseline.json.")
+  .description("Create an auditable risk baseline from current scan and intent results.")
+  .action(async (path: string, options: { reason: string; expires?: string; output?: string }) => {
+    const paths = localPaths(process.cwd());
+    const baselineOptions: Parameters<typeof createRiskBaseline>[1] = {
+      reason: options.reason
+    };
+    if (options.expires !== undefined) baselineOptions.expiresAt = options.expires;
+    const baseline = await createRiskBaseline(resolve(process.cwd(), path), baselineOptions);
+    const outputPath = resolve(process.cwd(), options.output ?? paths.baselineJson);
+    await writeRiskBaseline(baseline, outputPath);
+    await ensureDir(paths.reportsDir);
+    await writeFile(paths.baselineMarkdown, renderRiskBaselineMarkdown(baseline), "utf8");
+
+    console.log(`Baseline accepted ${baseline.accepted.length} risk entries`);
+    console.log(`Wrote ${outputPath}`);
+    console.log(`Wrote ${paths.baselineMarkdown}`);
+  });
+
+program
+  .command("triage")
+  .argument("<path>", "Skill directory or directory containing multiple SKILL.md files.")
+  .requiredOption("--baseline <path>", "Risk baseline JSON file.")
+  .option("--fail-on <severity>", "Exit non-zero when this severity or higher is unresolved.", parseSeverity)
+  .description("Compare current scan and intent results against an accepted risk baseline.")
+  .action(async (path: string, options: { baseline: string; failOn?: Severity }) => {
+    const paths = localPaths(process.cwd());
+    const baseline = await readRiskBaseline(resolve(process.cwd(), options.baseline));
+    const triage = await triageSkillRisk(resolve(process.cwd(), path), baseline);
+    const artifacts = await writeRiskTriageArtifacts(triage, paths.reportsDir);
+    const unresolved = [...triage.unresolvedFindings, ...triage.unresolvedIntentSignals];
+
+    console.log(`Triage decision: ${triage.decision.toUpperCase()}`);
+    console.log(`Accepted risks: ${triage.summary.accepted}`);
+    console.log(`Unresolved risks: ${triage.summary.unresolved}`);
+    console.log(`Risk score: ${triage.summary.riskScore}/100`);
+    for (const artifact of artifacts) {
+      console.log(`Wrote ${artifact}`);
+    }
+    if (triage.decision === "block") {
+      console.error("Triage blocked");
+      for (const finding of unresolved) {
+        console.error(`- [${finding.severity}] ${finding.category}: ${finding.target}`);
+      }
+      process.exitCode = 1;
+    }
+    applyThreshold(unresolved, options.failOn);
+  });
+
+program
   .command("passport")
   .argument("<skill-dir>", "Skill directory to approve.")
   .requiredOption("--source <uri>", "Source URI for the skill.")
@@ -425,20 +480,22 @@ function parseSeverity(value: string): Severity {
   return parsed.data;
 }
 
-function localPaths(cwd: string): { root: string; configPath: string; policyJson: string; reportsDir: string; reportJson: string; reportMarkdown: string; reportHtml: string; reportSarif: string; admissionJson: string; admissionMarkdown: string } {
+function localPaths(cwd: string): { root: string; configPath: string; policyJson: string; baselineJson: string; reportsDir: string; reportJson: string; reportMarkdown: string; reportHtml: string; reportSarif: string; admissionJson: string; admissionMarkdown: string; baselineMarkdown: string } {
   const root = join(cwd, ".skillguard");
   const reportsDir = join(root, "reports");
   return {
     root,
     configPath: join(root, "config.json"),
     policyJson: join(root, "policy.json"),
+    baselineJson: join(root, "baseline.json"),
     reportsDir,
     reportJson: join(reportsDir, "skillguard-report.json"),
     reportMarkdown: join(reportsDir, "skillguard-report.md"),
     reportHtml: join(reportsDir, "skillguard-report.html"),
     reportSarif: join(reportsDir, "skillguard-report.sarif"),
     admissionJson: join(reportsDir, "skillguard-admission.json"),
-    admissionMarkdown: join(reportsDir, "skillguard-admission.md")
+    admissionMarkdown: join(reportsDir, "skillguard-admission.md"),
+    baselineMarkdown: join(reportsDir, "skillguard-baseline.md")
   };
 }
 

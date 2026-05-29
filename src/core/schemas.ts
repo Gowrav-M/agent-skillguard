@@ -238,6 +238,43 @@ export const skillPassportVerificationSchema = z.object({
   passport: skillPassportSchema
 });
 
+export const skillRiskBaselineEntrySchema = z.object({
+  id: z.string().min(1),
+  source: z.enum(["scan", "intent"]),
+  severity: severitySchema,
+  category: z.string().min(1),
+  target: z.string().min(1),
+  title: z.string().min(1),
+  acceptedAt: z.string().datetime(),
+  reason: z.string().min(1),
+  expiresAt: z.string().optional()
+});
+
+export const skillRiskBaselineSchema = z.object({
+  schemaVersion: z.literal(1),
+  generatedAt: z.string().datetime(),
+  scope: z.string().min(1),
+  reason: z.string().min(1),
+  accepted: z.array(skillRiskBaselineEntrySchema)
+});
+
+export const skillRiskTriageSchema = z.object({
+  generatedAt: z.string().datetime(),
+  decision: z.enum(["allow", "review", "block"]),
+  summary: z.object({
+    accepted: z.number().int().nonnegative(),
+    unresolved: z.number().int().nonnegative(),
+    unresolvedFindings: z.number().int().nonnegative(),
+    unresolvedIntentSignals: z.number().int().nonnegative(),
+    riskScore: z.number().int().min(0).max(100)
+  }),
+  baseline: skillRiskBaselineSchema,
+  report: skillGuardReportSchema,
+  intent: skillIntentReviewSchema,
+  unresolvedFindings: z.array(skillFindingSchema),
+  unresolvedIntentSignals: z.array(skillFindingSchema)
+});
+
 export type Severity = z.infer<typeof severitySchema>;
 export type SkillCapability = z.infer<typeof capabilitySchema>;
 export type SkillManifest = z.infer<typeof skillManifestSchema>;
@@ -260,3 +297,6 @@ export type SkillContractDecision = z.infer<typeof skillContractDecisionSchema>;
 export type SkillIntentReview = z.infer<typeof skillIntentReviewSchema>;
 export type SkillPassport = z.infer<typeof skillPassportSchema>;
 export type SkillPassportVerification = z.infer<typeof skillPassportVerificationSchema>;
+export type SkillRiskBaselineEntry = z.infer<typeof skillRiskBaselineEntrySchema>;
+export type SkillRiskBaseline = z.infer<typeof skillRiskBaselineSchema>;
+export type SkillRiskTriage = z.infer<typeof skillRiskTriageSchema>;

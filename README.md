@@ -12,6 +12,8 @@ npx agent-skillguard verify-passport .skillguard/passports/code-reviewer/passpor
 
 npx agent-skillguard demo
 npx agent-skillguard intent ./skills
+npx agent-skillguard baseline ./skills --reason "initial reviewed risk"
+npx agent-skillguard triage ./skills --baseline .skillguard/baseline.json --fail-on high
 npx agent-skillguard trust ./skills/code-reviewer --source https://github.com/org/repo/tree/main/skills/code-reviewer --commit <sha>
 npx agent-skillguard contract ./skills
 npx agent-skillguard admit ./skills
@@ -31,6 +33,7 @@ Skills for Codex, Claude Code, Cursor, OpenCode, MCP workflows, and internal age
 
 - Creates a shareable Skill Passport that combines provenance, scan, semantic intent review, contract, admission, lock, and optional bundle evidence.
 - Runs a Semantic Intent Firewall for payload-less natural-language risks such as compliance-framed secret collection, approval bypass, and skill selection hijacking.
+- Creates auditable risk baselines so teams can accept reviewed existing risk and fail CI only on new or expired risk.
 - Blocks unpinned, mutable, or unapproved skill sources with a provenance firewall.
 - Enforces least-privilege capability contracts from `SKILL.md` declarations.
 - Finds hidden prompt injection and policy override text in Markdown, YAML, HTML comments, and code blocks.
@@ -86,6 +89,8 @@ agent-skillguard demo
 agent-skillguard passport <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--pack]
 agent-skillguard verify-passport <passport-json> [--skill-dir <path>] [--bundle <path>]
 agent-skillguard intent <path> [--fail-on high]
+agent-skillguard baseline <path> --reason <text> [--expires <date>]
+agent-skillguard triage <path> --baseline <path> [--fail-on high]
 agent-skillguard policy
 agent-skillguard trust <skill-dir> --source <uri> [--commit <sha>] [--publisher <name>] [--write]
 agent-skillguard contract <path>
@@ -173,6 +178,26 @@ It writes:
 ## Real-World Validation
 
 SkillGuard has been smoke-tested against 186 public `SKILL.md` files across official, community, and adversarial skill repositories. See [docs/real-world-validation.md](docs/real-world-validation.md) for commands, repository commits, results, and validation-driven rule tuning.
+
+## Risk Baselines
+
+Adopting a scanner in a mature repo usually starts with existing review-worthy risk. Baselines let teams accept the current state with a reason, then fail only when new or expired risk appears.
+
+```bash
+agent-skillguard baseline ./skills --reason "reviewed current vendored skills" --expires 2026-12-31
+agent-skillguard triage ./skills --baseline .skillguard/baseline.json --fail-on high
+```
+
+This writes:
+
+```text
+.skillguard/baseline.json
+.skillguard/reports/skillguard-baseline.md
+.skillguard/reports/skillguard-triage.json
+.skillguard/reports/skillguard-triage.md
+```
+
+See [docs/risk-baselines.md](docs/risk-baselines.md).
 
 ## Provenance Firewall
 

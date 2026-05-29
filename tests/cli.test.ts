@@ -49,6 +49,31 @@ describe("CLI", () => {
     expect(result.stderr).toContain("Intent blocked");
   });
 
+  it("baseline lets triage accept reviewed existing risk", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "skillguard-baseline-cli-"));
+    const baseline = await execaNode([
+      "src/cli.ts",
+      "baseline",
+      join(process.cwd(), "examples/skills/payloadless-compliance-hijack"),
+      "--reason",
+      "reviewed fixture risk"
+    ], cwd);
+    expect(baseline.exitCode).toBe(0);
+    expect(baseline.stdout).toContain("Baseline accepted");
+
+    const triage = await execaNode([
+      "src/cli.ts",
+      "triage",
+      join(process.cwd(), "examples/skills/payloadless-compliance-hijack"),
+      "--baseline",
+      join(cwd, ".skillguard/baseline.json"),
+      "--fail-on",
+      "high"
+    ], cwd);
+    expect(triage.exitCode).toBe(0);
+    expect(triage.stdout).toContain("Triage decision: ALLOW");
+  });
+
   it("passport allows safe pinned skills", async () => {
     const result = await execaNode([
       "src/cli.ts",

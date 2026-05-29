@@ -56,6 +56,14 @@ Block payload-less natural-language risks before they become runtime agent behav
 - run: npx agent-skillguard intent ./skills --fail-on high
 ```
 
+## Baseline Triage Gate
+
+For existing skill repositories, create a reviewed baseline once, then fail pull requests only on new or expired risk:
+
+```yaml
+- run: npx agent-skillguard triage ./skills --baseline .skillguard/baseline.json --fail-on high
+```
+
 For early rollout, use `agent-skillguard admit ./skills --sarif` without `--require-lock`. Once the team has approved skill locks, enable `--require-lock` so unreviewed skill drift fails pull requests.
 
 ## Update Review

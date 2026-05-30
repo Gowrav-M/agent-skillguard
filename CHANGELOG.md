@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+- Added `evidence` to emit normalized `agent.trust.evidence.v1` skill supply-chain evidence for Agent Trust Center.
+- Added a shared Agent Trust Suite diagram to the README.
+- Added trust evidence normalization tests.
+
 ## 1.0.0
 
 - Added SkillSet Attack Graph with `graph`.

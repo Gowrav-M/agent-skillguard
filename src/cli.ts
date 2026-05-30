@@ -18,9 +18,10 @@ import { renderHtmlReport, renderMarkdownReport, renderSarifReport } from "./cor
 import { meetsThreshold } from "./core/risk.js";
 import { scanSkillPath } from "./core/scanner.js";
 import { severitySchema, skillGuardPolicySchema, skillGuardReportSchema, type Severity, type SkillAdmissionDecision, type SkillFinding, type SkillGuardPolicy, type SkillGuardReport } from "./core/schemas.js";
+import { createSkillGuardTrustEvidence, trustEvidencePath } from "./core/trustEvidence.js";
 import { reviewSkillUpdate, writeUpdateReviewArtifacts } from "./core/updateReview.js";
 
-const version = "1.0.0";
+const version = "1.1.0";
 
 interface ReportWriteOptions {
   sarif?: boolean;
@@ -505,6 +506,23 @@ program
     if (checks.some((check) => !check.ok)) {
       process.exitCode = 1;
     }
+  });
+
+program
+  .command("evidence")
+  .description("Write normalized Agent Trust Center evidence from the latest SkillGuard report.")
+  .action(async () => {
+    const paths = localPaths(process.cwd());
+    try {
+      await access(paths.reportJson, constants.R_OK);
+    } catch {
+      throw new Error("No SkillGuard report found. Run agent-skillguard demo, scan, or report first.");
+    }
+    const evidence = await createSkillGuardTrustEvidence({ paths, version });
+    const outputPath = trustEvidencePath(paths);
+    await writeJsonFile(outputPath, evidence);
+    console.log(`Decision: ${evidence.decision.toUpperCase()}`);
+    console.log(`Trust evidence: ${outputPath}`);
   });
 
 await program.parseAsync(process.argv);
